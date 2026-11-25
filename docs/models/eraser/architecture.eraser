@@ -1,0 +1,53 @@
+// Eraser 다이어그램 코드: 기술 구성도
+// 사용법: Eraser에서 새 Cloud Architecture 다이어그램을 만들고 이 내용을 코드 창에 붙여넣는다.
+// 색 의미: 초록 = 코드에서 확인됨, 파랑 = 팀원 문서에서 제안됨, 노랑 = 아직 미정, 회색 = MVP 범위 밖
+// 아이콘이 표시되지 않으면 Eraser의 아이콘 이름 목록에서 바꿔도 된다.
+title 기술 구성도 - 사회초년생 급여명세서 점검
+
+사용자 [icon: user]
+
+클라이언트 {
+  모바일 웹 PWA Next.js [icon: smartphone, color: blue]
+}
+
+서버 {
+  API Next.js API [icon: server, color: blue]
+  OCR 파트 전처리 마스킹 정규화 검증 [icon: scan, color: blue]
+  규칙 엔진 감면 공제 점검 [icon: cpu, color: blue]
+  인증 [icon: lock, color: yellow]
+  비동기 작업 큐 [icon: layers, color: yellow]
+}
+
+데이터 {
+  Prisma ORM [icon: database, color: green]
+  PostgreSQL 7개 테이블 [icon: database, color: green]
+}
+
+외부 서비스 {
+  Vision LLM OCR API [icon: cloud, color: blue]
+  알림 발송 [icon: bell, color: yellow]
+}
+
+배포 호스팅 [icon: cloud, color: yellow]
+
+범위 밖 {
+  홈택스 연동 [icon: link, color: gray]
+  세무사 연결 [icon: users, color: gray]
+  원본 파일 저장소 S3 [icon: archive, color: gray]
+}
+
+사용자 > 모바일 웹 PWA Next.js: HTTPS
+모바일 웹 PWA Next.js > API Next.js API: 명세서 업로드
+모바일 웹 PWA Next.js > 인증: 로그인
+API Next.js API > OCR 파트 전처리 마스킹 정규화 검증
+OCR 파트 전처리 마스킹 정규화 검증 > Vision LLM OCR API: 마스킹된 이미지만 전송
+Vision LLM OCR API > OCR 파트 전처리 마스킹 정규화 검증: 원문 항목명과 금액
+OCR 파트 전처리 마스킹 정규화 검증 > API Next.js API: 표준 JSON 사용자 확인 후 저장
+API Next.js API > 규칙 엔진 감면 공제 점검
+API Next.js API > Prisma ORM
+규칙 엔진 감면 공제 점검 > Prisma ORM
+Prisma ORM > PostgreSQL 7개 테이블
+API Next.js API > 비동기 작업 큐: 15초 초과 시 검토
+API Next.js API > 알림 발송: 미정
+배포 호스팅 > API Next.js API: 미정
+배포 호스팅 > 모바일 웹 PWA Next.js: 미정

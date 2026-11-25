@@ -1,0 +1,59 @@
+flowchart LR
+  U([사용자: 사회초년생]) -->|HTTPS| FE
+  subgraph CLIENT [클라이언트]
+    FE[모바일 웹 / PWA: Next.js]
+  end
+  subgraph SERVER [서버]
+    API[API: Next.js API]
+    OCR[OCR 파트: 전처리, 개인정보 마스킹, 정규화, 검증. 원본은 추출 직후 삭제]
+    RULE[규칙 엔진: 감면/공제 점검]
+    AUTH[인증]
+    ASYNC[비동기 작업 큐]
+  end
+  subgraph DATA [데이터]
+    ORM[Prisma ORM]
+    DB[(PostgreSQL: 7개 테이블 User, Payslip, PayslipField, TaxRuleVersion, CheckFinding, TaskTemplate, UserTask)]
+  end
+  subgraph EXT [외부 서비스]
+    LLM[Vision LLM / OCR API]
+    NOTI[알림 발송]
+  end
+  subgraph OUT [범위 밖]
+    HT[홈택스 연동]
+    TAX[세무사 연결]
+    FILES[원본 파일 저장소 S3: 원본 미저장 방침으로 불필요]
+  end
+  FE -->|"명세서 업로드 POST /payslip/extract"| API
+  FE -->|로그인| AUTH
+  API --> OCR
+  OCR -->|"마스킹된 이미지만 전송"| LLM
+  LLM -->|"원문 항목명, 금액"| OCR
+  OCR -->|"표준 JSON, 사용자 확인 후 저장"| API
+  API --> RULE
+  API --> ORM
+  RULE --> ORM
+  ORM --> DB
+  API -.->|"15초 초과 시 검토"| ASYNC
+  API -.-> NOTI
+  DEP[배포 / 호스팅] -.-> API
+  DEP -.-> FE
+  FE -.-> HT
+  FE -.-> TAX
+  subgraph LEGEND [범례]
+    L1[코드에서 확인됨]
+    L2[팀원 문서에서 제안됨]
+    L3[아직 미정]
+    L4[MVP 범위 밖]
+  end
+  classDef code fill:#d5e8d4,stroke:#82b366,stroke-width:2px
+  classDef prop fill:#dae8fc,stroke:#6c8ebf
+  classDef tbd fill:#fff2cc,stroke:#d6b656,stroke-dasharray:5 5
+  classDef out fill:#f5f5f5,stroke:#999999,stroke-dasharray:3 3
+  class ORM,DB code
+  class FE,API,OCR,LLM,RULE prop
+  class AUTH,ASYNC,NOTI,DEP tbd
+  class HT,TAX,FILES out
+  class L1 code
+  class L2 prop
+  class L3 tbd
+  class L4 out

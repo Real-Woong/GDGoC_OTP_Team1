@@ -26,6 +26,7 @@
 | [`docs/erd-mvp.drawio`](docs/erd-mvp.drawio) | 위 ERD 그림 |
 | [`docs/architecture.drawio`](docs/architecture.drawio) | 기술 구성도: 코드 확인 / 팀 제안 / 미정 / 범위 밖을 색으로 구분 |
 | [`docs/meeting-summary.md`](docs/meeting-summary.md) | 회의용 한 장 요약과 결정 체크리스트 |
+| [`docs/models/`](docs/models/) | draw.io(Mermaid)와 Eraser에 붙여넣는 한글 모델 코드: 사용자 흐름, ERD, 기술 구성도 |
 | [`docs/archive/`](docs/archive/) | 축소 전 20개 테이블 설계(스키마, ERD, 시드) 보관본 |
 
 `.drawio` 파일은 [app.diagrams.net](https://app.diagrams.net)에서 열 수 있습니다.
