@@ -1,6 +1,6 @@
 # 사회초년생 급여명세서 점검 앱 — 데모용 MVP 구조
 
-7개 테이블로 "급여명세서 업로드 → 확인 → 규칙 점검 → 확인할 일" 흐름을 구성한다. 상세 컬럼과 제약은 `prisma/schema.prisma`에 있고, 그림은 `docs/erd-mvp.drawio`에 있다. 기존 20개 테이블 설계(프리랜서·크리에이터·N잡러 중심)는 `docs/archive/erd-full-20-tables.md`에 보관했다.
+7개 테이블로 "급여명세서 업로드 → 확인 → 규칙 점검 → 확인할 일" 흐름을 구성한다. 상세 컬럼과 제약은 `prisma/schema.prisma`에 있고, 그림은 `docs/MEETING_MATERIAL/MVP/FOR_Draw_Io/erd-mvp.drawio`에 있다. 기존 20개 테이블 설계(프리랜서·크리에이터·N잡러 중심)는 `docs/ARCHIVE/FULL_20_TABLES/erd-full-20-tables.md`에 보관했다.
 
 ## ERD
 
@@ -123,4 +123,4 @@ erDiagram
 
 - **N잡러:** 부업 수입 기록, 근로+부업 합산 시뮬레이션. 명세서의 `income_tax`와 `local_income_tax`가 기납부세액 입력이 된다.
 - **인플루언서:** 플랫폼 수입, 통화·환율 기록, 수입원 관리, 경비·증빙.
-- 위 확장 테이블의 설계는 `docs/archive/erd-full-20-tables.md`와 `docs/archive/schema-full-20-tables.prisma.txt`를 참고한다.
+- 위 확장 테이블의 설계는 `docs/ARCHIVE/FULL_20_TABLES/erd-full-20-tables.md`와 `docs/ARCHIVE/FULL_20_TABLES/schema-full-20-tables.prisma.txt`를 참고한다.

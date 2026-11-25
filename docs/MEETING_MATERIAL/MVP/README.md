@@ -2,13 +2,13 @@
 
 MVP의 사용자 흐름, ERD, 기술 구성도를 **텍스트 코드**로 보관한 폴더입니다. 코드를 각 도구에 붙여넣으면 다이어그램이 만들어지고, 팀원이 도구에서 바로 수정할 수 있습니다. 라벨은 한글입니다.
 
-| 모델 | draw.io용 (Mermaid) | Eraser용 (Eraser 코드) |
+| 모델 | FOR_Draw_Io (Mermaid) | FOR_Eraser_Io (Eraser 코드) |
 |---|---|---|
-| 사용자 흐름 | [`drawio/user-flow.mmd`](drawio/user-flow.mmd) | [`eraser/user-flow.eraser`](eraser/user-flow.eraser) |
-| ERD (7개 테이블) | [`drawio/erd.mmd`](drawio/erd.mmd) | [`eraser/erd.eraser`](eraser/erd.eraser) |
-| 기술 구성도 | [`drawio/architecture.mmd`](drawio/architecture.mmd) | [`eraser/architecture.eraser`](eraser/architecture.eraser) |
+| 사용자 흐름 | [`FOR_Draw_Io/user-flow.mmd`](FOR_Draw_Io/user-flow.mmd) | [`FOR_Eraser_Io/user-flow.eraser`](FOR_Eraser_Io/user-flow.eraser) |
+| ERD (7개 테이블) | [`FOR_Draw_Io/erd.mmd`](FOR_Draw_Io/erd.mmd) | [`FOR_Eraser_Io/erd.eraser`](FOR_Eraser_Io/erd.eraser) |
+| 기술 구성도 | [`FOR_Draw_Io/architecture.mmd`](FOR_Draw_Io/architecture.mmd) | [`FOR_Eraser_Io/architecture.eraser`](FOR_Eraser_Io/architecture.eraser) |
 
-완성된 draw.io 파일은 한 단계 위의 [`docs/`](../)에 있습니다: `user-flow.drawio`, `erd-mvp.drawio`, `architecture.drawio`.
+완성된 draw.io 파일(`user-flow.drawio`, `erd-mvp.drawio`, `architecture.drawio`)은 [`FOR_Draw_Io/`](FOR_Draw_Io/)에 Mermaid 소스와 함께 있다.
 
 ## draw.io에 넣는 법
 

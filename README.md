@@ -21,13 +21,15 @@
 
 | 문서 | 내용 |
 |---|---|
-| [`docs/user-flow.drawio`](docs/user-flow.drawio) | 사용자 흐름: 명세서 업로드 → 확인 → 점검 → 할 일 (로그인 필요, 빈 결과, 요청 실패 분기 포함) |
-| [`docs/erd.md`](docs/erd.md) | 데모용 데이터 구조 설명 (7개 테이블) |
-| [`docs/erd-mvp.drawio`](docs/erd-mvp.drawio) | 위 ERD 그림 |
-| [`docs/architecture.drawio`](docs/architecture.drawio) | 기술 구성도: 코드 확인 / 팀 제안 / 미정 / 범위 밖을 색으로 구분 |
-| [`docs/meeting-summary.md`](docs/meeting-summary.md) | 회의용 한 장 요약과 결정 체크리스트 |
-| [`docs/models/`](docs/models/) | draw.io(Mermaid)와 Eraser에 붙여넣는 한글 모델 코드: 사용자 흐름, ERD, 기술 구성도 |
-| [`docs/archive/`](docs/archive/) | 축소 전 20개 테이블 설계(스키마, ERD, 시드) 보관본 |
+| [`docs/MEETING_MATERIAL/MVP/FOR_Draw_Io/user-flow.drawio`](docs/MEETING_MATERIAL/MVP/FOR_Draw_Io/user-flow.drawio) | 사용자 흐름: 명세서 업로드 → 확인 → 점검 → 할 일 (로그인 필요, 빈 결과, 요청 실패 분기 포함) |
+| [`docs/DATABASE/MVP/erd.md`](docs/DATABASE/MVP/erd.md) | 데모용 데이터 구조 설명 (7개 테이블) |
+| [`docs/MEETING_MATERIAL/MVP/FOR_Draw_Io/erd-mvp.drawio`](docs/MEETING_MATERIAL/MVP/FOR_Draw_Io/erd-mvp.drawio) | 위 ERD 그림 |
+| [`docs/MEETING_MATERIAL/MVP/FOR_Draw_Io/architecture.drawio`](docs/MEETING_MATERIAL/MVP/FOR_Draw_Io/architecture.drawio) | 기술 구성도: 코드 확인 / 팀 제안 / 미정 / 범위 밖을 색으로 구분 |
+| [`docs/MEETING_MATERIAL/MVP/SUMMARY/meeting-summary.md`](docs/MEETING_MATERIAL/MVP/SUMMARY/meeting-summary.md) | 회의용 한 장 요약과 결정 체크리스트 |
+| [`docs/MEETING_MATERIAL/MVP/`](docs/MEETING_MATERIAL/MVP/) | draw.io(`FOR_Draw_Io`, Mermaid 포함)와 Eraser(`FOR_Eraser_Io`)에 붙여넣는 한글 모델 코드 |
+| [`docs/ARCHIVE/`](docs/ARCHIVE/) | 축소 전 20개 테이블 설계(`FULL_20_TABLES`)와 시뮬레이션 중심 이전 흐름도(`SIMULATION_FLOW`) 보관본 |
+
+폴더 구조는 [`docs/README.md`](docs/README.md)를 참고하세요.
 
 `.drawio` 파일은 [app.diagrams.net](https://app.diagrams.net)에서 열 수 있습니다.
 
@@ -43,7 +45,7 @@
 
 `prisma/schema.prisma`에 7개 테이블이 정의되어 있습니다: `User`, `Payslip`, `PayslipField`, `TaxRuleVersion`, `CheckFinding`, `TaskTemplate`, `UserTask`. 급여명세서 원본 파일은 저장하지 않고, 추출된 항목과 금액만 저장하는 설계입니다.
 
-데모 단순화로 **개인 데이터 암호화, soft delete, 동의 이력 테이블은 포함하지 않았습니다.** 실서비스로 전환할 때 다시 도입해야 합니다. 자세한 내용은 [`docs/erd.md`](docs/erd.md)를 참고하세요.
+데모 단순화로 **개인 데이터 암호화, soft delete, 동의 이력 테이블은 포함하지 않았습니다.** 실서비스로 전환할 때 다시 도입해야 합니다. 자세한 내용은 [`docs/DATABASE/MVP/erd.md`](docs/DATABASE/MVP/erd.md)를 참고하세요.
 
 `DATABASE_URL` 환경 변수가 필요합니다. 비밀 값은 `.env`에 두고 저장소에 올리지 않습니다 (`.gitignore`로 제외).
 

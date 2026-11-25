@@ -1,5 +1,5 @@
-// PostgreSQL / Prisma ORM. 데모용 축소 스키마 (docs/erd-mvp.drawio 기준, 7개 테이블).
-// 기존 20개 테이블 버전은 docs/archive/schema-full-20-tables.prisma.txt 에 보관했다.
+// PostgreSQL / Prisma ORM. 데모용 축소 스키마 (docs/MEETING_MATERIAL/MVP/FOR_Draw_Io/erd-mvp.drawio 기준, 7개 테이블).
+// 기존 20개 테이블 버전은 docs/ARCHIVE/FULL_20_TABLES/schema-full-20-tables.prisma.txt 에 보관했다.
 //
 // 데모 단순화 (실서비스 전환 시 다시 넣을 것):
 //  - 개인 데이터 암호화 없음 (금액은 평문 Int 원 단위)
