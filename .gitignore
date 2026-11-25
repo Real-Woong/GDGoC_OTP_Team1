@@ -1,0 +1,53 @@
+# Claude Code (로컬 설정, 세션 데이터)
+.claude/
+
+# 환경 변수 / 비밀 값 (DATABASE_URL, LLM API 키 등). 예시 파일만 올린다.
+.env
+.env.*
+!.env.example
+
+# 의존성
+node_modules/
+
+# 빌드 결과물 (Next.js 등)
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# 로그, 캐시
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.cache/
+.turbo/
+coverage/
+
+# 로컬 DB 파일 (Prisma 개발용 SQLite 등)
+*.db
+*.sqlite
+*.sqlite3
+
+# 업로드/테스트용 개인정보 샘플 (실제 급여명세서는 절대 올리지 않는다)
+samples/
+uploads/
+*.pdf
+*.heic
+
+# 편집기
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# draw.io 임시/백업 파일
+*.drawio.bkp
+.$*.drawio.bkp
+.$*.drawio.dtmp

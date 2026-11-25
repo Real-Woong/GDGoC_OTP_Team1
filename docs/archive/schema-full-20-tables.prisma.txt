@@ -1,0 +1,490 @@
+// PostgreSQL / Prisma ORM 6.19.0. User monetary data is an encrypted envelope,
+// whose logical values are Decimal strings; never use JS Number for money.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Occupation {
+  EMPLOYEE
+  FREELANCER
+  CREATOR
+  MULTI_JOB
+}
+
+enum BusinessType {
+  UNREGISTERED
+  SIMPLIFIED
+  GENERAL
+}
+
+enum ConsentPurpose {
+  TERMS_OF_SERVICE
+  PERSONAL_DATA_PROCESSING
+  MARKETING
+}
+
+enum IncomeGuide {
+  EMPLOYMENT
+  BUSINESS
+  OTHER
+  MIXED
+  UNDETERMINED
+}
+
+enum IncomeSourceType {
+  SALARY
+  FREELANCE_SERVICE
+  ADSENSE
+  SPONSORSHIP
+  DONATION_SUPERCHAT
+  MCN_SETTLEMENT
+  PRODUCT_SALES
+}
+
+enum IncomeTreatment {
+  EMPLOYMENT
+  BUSINESS
+  OTHER
+  UNDETERMINED
+}
+
+enum ExpenseCategory {
+  EQUIPMENT
+  SOFTWARE
+  OFFICE
+  COMMUNICATION
+  TRAVEL
+  OUTSOURCING
+  EDUCATION
+  SUPPLIES
+  OTHER
+}
+
+enum EvidenceType {
+  RECEIPT
+  TAX_INVOICE
+  CARD_SLIP
+  CASH_RECEIPT
+  OTHER
+}
+
+enum ExpenseRateMethod {
+  SIMPLE
+  STANDARD
+  BOOKKEEPING
+  MIXED
+  UNDETERMINED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  UNKNOWN
+}
+
+enum RuleStatus {
+  DRAFT
+  VERIFIED
+}
+
+enum ScheduleType {
+  COMPREHENSIVE_INCOME_TAX
+  INTERIM_PREPAYMENT
+  VAT_JANUARY
+  VAT_JULY
+  BUSINESS_REGISTRATION
+}
+
+enum ChecklistType {
+  EMPLOYEE
+  FREELANCER
+  CREATOR
+  MULTI_JOB
+  VAT
+}
+
+enum ChecklistStatus {
+  TODO
+  DONE
+  NOT_APPLICABLE
+}
+
+model User {
+  id                      String                   @id @default(cuid())
+  createdAt               DateTime                 @default(now()) @db.Timestamptz(3)
+  updatedAt               DateTime                 @updatedAt @db.Timestamptz(3)
+  deletedAt               DateTime?                @db.Timestamptz(3)
+  authSubject             String                   @unique
+  occupation              Occupation
+  businessType            BusinessType             @default(UNREGISTERED)
+  industryCode            String?                  @db.VarChar(6)
+  businessStartedOn       DateTime?                @db.Date
+  // ENCRYPT: nickname/contact email only; forbidden identifiers are never accepted.
+  contactCiphertext       Bytes?
+  consents                ConsentHistory[]
+  diagnoses               Diagnosis[]
+  incomeSources           IncomeSource[]
+  incomes                 IncomeRecord[]
+  expenses                Expense[]
+  simulations             Simulation[]
+  notificationPreferences NotificationPreference[]
+  checklistProgress       ChecklistProgress[]
+  bookmarks               Bookmark[]
+}
+
+model ConsentHistory {
+  id           String         @id @default(cuid())
+  createdAt    DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime       @updatedAt @db.Timestamptz(3)
+  deletedAt    DateTime?      @db.Timestamptz(3)
+  userId       String
+  purpose      ConsentPurpose
+  termsVersion String
+  agreedAt     DateTime       @db.Timestamptz(3)
+  withdrawnAt  DateTime?      @db.Timestamptz(3)
+  user         User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, purpose, agreedAt])
+}
+
+model Diagnosis {
+  id                           String         @id @default(cuid())
+  createdAt                    DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt                    DateTime       @updatedAt @db.Timestamptz(3)
+  deletedAt                    DateTime?      @db.Timestamptz(3)
+  userId                       String
+  questionnaireVersion         String
+  taxRuleVersionId             String
+  // ENCRYPT: allowlisted question IDs and choice IDs, no arbitrary free text.
+  answersCiphertext            Bytes
+  guide                        IncomeGuide
+  suspectedDisguisedEmployment Boolean
+  isEstimate                   Boolean        @default(true)
+  evaluatedAt                  DateTime       @db.Timestamptz(3)
+  user                         User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  taxRuleVersion               TaxRuleVersion @relation(fields: [taxRuleVersionId], references: [id], onDelete: Restrict)
+
+  @@index([userId, evaluatedAt])
+  @@index([taxRuleVersionId])
+}
+
+model IncomeSource {
+  id                String           @id @default(cuid())
+  createdAt         DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime         @updatedAt @db.Timestamptz(3)
+  deletedAt         DateTime?        @db.Timestamptz(3)
+  userId            String
+  type              IncomeSourceType
+  // ENCRYPT: display label and payer name. No bank/account identifiers.
+  detailsCiphertext Bytes
+  user              User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  incomes           IncomeRecord[]
+  expenses          Expense[]
+
+  @@unique([id, userId])
+  @@index([userId, deletedAt, type])
+}
+
+model IncomeRecord {
+  id                 String          @id @default(cuid())
+  createdAt          DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime        @updatedAt @db.Timestamptz(3)
+  deletedAt          DateTime?       @db.Timestamptz(3)
+  userId             String
+  sourceId           String
+  receivedOn         DateTime        @db.Date
+  treatment          IncomeTreatment @default(UNDETERMINED)
+  currency           String          @db.Char(3)
+  exchangeRateToKrw  Decimal         @db.Decimal(24, 10)
+  exchangeRateDate   DateTime        @db.Date
+  exchangeRateSource String
+  withholdingApplied Boolean         @default(false)
+  // ENCRYPT: Decimal(20,4) grossAmount and withholdingAmount in currency.
+  // Never store a derived tax estimate here; Simulation owns calculated results.
+  amountsCiphertext  Bytes
+  user               User            @relation(fields: [userId], references: [id], onDelete: Restrict)
+  source             IncomeSource    @relation(fields: [sourceId, userId], references: [id, userId], onDelete: Restrict)
+
+  @@index([userId, deletedAt, receivedOn])
+  @@index([sourceId, userId])
+}
+
+model Expense {
+  id                 String          @id @default(cuid())
+  createdAt          DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime        @updatedAt @db.Timestamptz(3)
+  deletedAt          DateTime?       @db.Timestamptz(3)
+  userId             String
+  sourceId           String?
+  category           ExpenseCategory
+  spentOn            DateTime        @db.Date
+  currency           String          @db.Char(3)
+  exchangeRateToKrw  Decimal         @db.Decimal(24, 10)
+  exchangeRateDate   DateTime        @db.Date
+  exchangeRateSource String
+  // ENCRYPT: Decimal(20,4) amount in currency; no free-text identifiers.
+  amountsCiphertext  Bytes
+  user               User            @relation(fields: [userId], references: [id], onDelete: Restrict)
+  source             IncomeSource?   @relation(fields: [sourceId, userId], references: [id, userId], onDelete: Restrict)
+  evidence           Evidence[]
+
+  @@unique([id, userId])
+  @@index([userId, deletedAt, spentOn])
+  @@index([sourceId, userId])
+}
+
+model Evidence {
+  id        String       @id @default(cuid())
+  createdAt DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime     @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime?    @db.Timestamptz(3)
+  expenseId String
+  userId    String
+  type      EvidenceType
+  // Private S3 object key only. No URL, original filename or document contents.
+  s3Key     String       @unique
+  mimeType  String
+  byteSize  BigInt
+  expense   Expense      @relation(fields: [expenseId, userId], references: [id, userId], onDelete: Restrict)
+
+  @@index([expenseId, userId])
+}
+
+model Simulation {
+  id                String            @id @default(cuid())
+  createdAt         DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime          @updatedAt @db.Timestamptz(3)
+  deletedAt         DateTime?         @db.Timestamptz(3)
+  userId            String
+  taxYear           Int
+  taxRuleVersionId  String
+  calculatorVersion String
+  calculatedAt      DateTime          @db.Timestamptz(3)
+  isEstimate        Boolean           @default(true)
+  // ENCRYPT: immutable full input snapshot, including manual deductions,
+  // prior-year revenue by industry, employment settlement and dependent facts.
+  inputCiphertext   Bytes
+  // ENCRYPT: Decimal integer KRW results and per-industry expense method.
+  resultCiphertext  Bytes
+  expenseRateMethod ExpenseRateMethod @default(UNDETERMINED)
+  dependentRisk     RiskLevel         @default(UNKNOWN)
+  user              User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  taxRuleVersion    TaxRuleVersion    @relation(fields: [taxRuleVersionId, taxYear], references: [id, taxYear], onDelete: Restrict)
+
+  @@index([userId, taxYear, calculatedAt])
+  @@index([taxRuleVersionId, taxYear])
+}
+
+model Schedule {
+  id                  String                   @id @default(cuid())
+  createdAt           DateTime                 @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime                 @updatedAt @db.Timestamptz(3)
+  deletedAt           DateTime?                @db.Timestamptz(3)
+  taxYear             Int
+  type                ScheduleType
+  title               String
+  dueOn               DateTime?                @db.Date
+  // Relative registration guidance has no invented statutory fixed date.
+  guidance            String?
+  targetOccupations   Occupation[]
+  targetBusinessTypes BusinessType[]
+  sourceUrl           String?
+  isVerified          Boolean                  @default(false)
+  preferences         NotificationPreference[]
+
+  @@unique([taxYear, type])
+  @@index([dueOn])
+}
+
+model NotificationPreference {
+  id               String    @id @default(cuid())
+  createdAt        DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt        DateTime? @db.Timestamptz(3)
+  userId           String
+  scheduleId       String
+  enabled          Boolean   @default(true)
+  daysBefore       Int       @default(7)
+  localHour        Int       @default(9)
+  // User-selected reminder date for relative guidance; Asia/Seoul in MVP.
+  customReminderOn DateTime? @db.Date
+  user             User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  schedule         Schedule  @relation(fields: [scheduleId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, scheduleId])
+  @@index([scheduleId, enabled])
+}
+
+model ChecklistTemplate {
+  id        String          @id @default(cuid())
+  createdAt DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime        @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime?       @db.Timestamptz(3)
+  taxYear   Int
+  type      ChecklistType
+  title     String
+  items     ChecklistItem[]
+
+  @@unique([taxYear, type])
+}
+
+model ChecklistItem {
+  id          String              @id @default(cuid())
+  createdAt   DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime            @updatedAt @db.Timestamptz(3)
+  deletedAt   DateTime?           @db.Timestamptz(3)
+  templateId  String
+  key         String
+  title       String
+  description String?
+  sortOrder   Int
+  template    ChecklistTemplate   @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  progress    ChecklistProgress[]
+
+  @@unique([templateId, key])
+  @@unique([templateId, sortOrder])
+}
+
+model ChecklistProgress {
+  id          String          @id @default(cuid())
+  createdAt   DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime        @updatedAt @db.Timestamptz(3)
+  deletedAt   DateTime?       @db.Timestamptz(3)
+  userId      String
+  itemId      String
+  status      ChecklistStatus @default(TODO)
+  completedAt DateTime?       @db.Timestamptz(3)
+  user        User            @relation(fields: [userId], references: [id], onDelete: Restrict)
+  item        ChecklistItem   @relation(fields: [itemId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, itemId])
+  @@index([itemId])
+}
+
+model Article {
+  id                String       @id @default(cuid())
+  createdAt         DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime     @updatedAt @db.Timestamptz(3)
+  deletedAt         DateTime?    @db.Timestamptz(3)
+  slug              String       @unique
+  title             String
+  body              String
+  tags              String[]
+  targetOccupations Occupation[]
+  publishedAt       DateTime?    @db.Timestamptz(3)
+  bookmarks         Bookmark[]
+
+  @@index([publishedAt])
+  @@index([tags], type: Gin)
+  @@index([targetOccupations], type: Gin)
+}
+
+model Bookmark {
+  id        String    @id @default(cuid())
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  userId    String
+  articleId String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  article   Article   @relation(fields: [articleId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, articleId])
+  @@index([articleId])
+}
+
+model TaxRuleVersion {
+  id                String               @id @default(cuid())
+  createdAt         DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime             @updatedAt @db.Timestamptz(3)
+  deletedAt         DateTime?            @db.Timestamptz(3)
+  taxYear           Int
+  version           String
+  status            RuleStatus           @default(DRAFT)
+  description       String
+  sourceUrls        String[]
+  verifiedAt        DateTime?            @db.Timestamptz(3)
+  // Common non-personal parameters: decimal strings with explicit units.
+  // Includes withholding components, earned-income deductions/credits,
+  // local surtax, rounding, VAT/registration and diagnosis guide criteria.
+  parameters        Json
+  brackets          IncomeTaxBracket[]
+  expenseRates      ExpenseRateRule[]
+  healthInsurance   HealthInsuranceRule?
+  dependentCriteria DependentCriteria?
+  simulations       Simulation[]
+  diagnoses         Diagnosis[]
+
+  @@unique([taxYear, version])
+  @@unique([id, taxYear])
+  @@index([taxYear, status])
+}
+
+model IncomeTaxBracket {
+  id                      String         @id @default(cuid())
+  createdAt               DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt               DateTime       @updatedAt @db.Timestamptz(3)
+  deletedAt               DateTime?      @db.Timestamptz(3)
+  taxRuleVersionId        String
+  lowerBoundKrw           Decimal        @db.Decimal(20, 0)
+  upperBoundKrw           Decimal?       @db.Decimal(20, 0)
+  rate                    Decimal        @db.Decimal(12, 10)
+  progressiveDeductionKrw Decimal        @db.Decimal(20, 0)
+  taxRuleVersion          TaxRuleVersion @relation(fields: [taxRuleVersionId], references: [id], onDelete: Restrict)
+
+  @@unique([taxRuleVersionId, lowerBoundKrw])
+}
+
+model ExpenseRateRule {
+  id                               String         @id @default(cuid())
+  createdAt                        DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt                        DateTime       @updatedAt @db.Timestamptz(3)
+  deletedAt                        DateTime?      @db.Timestamptz(3)
+  taxRuleVersionId                 String
+  industryCode                     String         @db.VarChar(6)
+  // Eligibility: previous-year revenue < limit; separate new-business limit.
+  simplePriorRevenueLimitKrw       Decimal        @db.Decimal(20, 0)
+  simpleNewBusinessRevenueLimitKrw Decimal        @db.Decimal(20, 0)
+  bookkeepingRevenueLimitKrw       Decimal        @db.Decimal(20, 0)
+  simpleRate                       Decimal        @db.Decimal(12, 10)
+  standardRate                     Decimal        @db.Decimal(12, 10)
+  // More complex industry exceptions are decimal-string/boolean JSON rules.
+  eligibilityParameters            Json
+  taxRuleVersion                   TaxRuleVersion @relation(fields: [taxRuleVersionId], references: [id], onDelete: Restrict)
+
+  @@unique([taxRuleVersionId, industryCode])
+}
+
+model HealthInsuranceRule {
+  id                       String         @id @default(cuid())
+  createdAt                DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt                DateTime       @updatedAt @db.Timestamptz(3)
+  deletedAt                DateTime?      @db.Timestamptz(3)
+  taxRuleVersionId         String         @unique
+  employeeTotalRate        Decimal        @db.Decimal(12, 10)
+  employeeShareRate        Decimal        @db.Decimal(12, 10)
+  longTermCareRelativeRate Decimal        @db.Decimal(12, 10)
+  // Versioned regional premium and secondary-income parameters, if supported.
+  parameters               Json
+  taxRuleVersion           TaxRuleVersion @relation(fields: [taxRuleVersionId], references: [id], onDelete: Restrict)
+}
+
+model DependentCriteria {
+  id                                 String         @id @default(cuid())
+  createdAt                          DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt                          DateTime       @updatedAt @db.Timestamptz(3)
+  deletedAt                          DateTime?      @db.Timestamptz(3)
+  taxRuleVersionId                   String         @unique
+  annualIncomeLimitKrw               Decimal        @db.Decimal(20, 0)
+  unregisteredBusinessIncomeLimitKrw Decimal        @db.Decimal(20, 0)
+  propertyTaxBaseLimitKrw            Decimal        @db.Decimal(20, 0)
+  // Registration, income definitions, property bands and exception conditions.
+  parameters                         Json
+  taxRuleVersion                     TaxRuleVersion @relation(fields: [taxRuleVersionId], references: [id], onDelete: Restrict)
+}

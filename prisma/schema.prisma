@@ -1,0 +1,172 @@
+// PostgreSQL / Prisma ORM. 데모용 축소 스키마 (docs/erd-mvp.drawio 기준, 7개 테이블).
+// 기존 20개 테이블 버전은 docs/archive/schema-full-20-tables.prisma.txt 에 보관했다.
+//
+// 데모 단순화 (실서비스 전환 시 다시 넣을 것):
+//  - 개인 데이터 암호화 없음 (금액은 평문 Int 원 단위)
+//  - soft delete(deletedAt) 없음
+//  - 동의 이력은 User의 termsVersion/consentedAt 한 쌍으로 축소 (철회·재동의 이력 없음)
+//  - 급여명세서 원본 파일은 저장하지 않는다 (추출 직후 삭제). 추출된 항목과 금액만 저장한다.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// OCR 표준 필드 14개 (급여명세서 OCR 파트 명세 기준, 월 금액).
+enum PayslipFieldKey {
+  base_salary
+  meal_allowance
+  car_allowance
+  overtime_pay
+  bonus
+  payment_total
+  national_pension
+  health_insurance
+  long_term_care
+  employment_insurance
+  income_tax
+  local_income_tax
+  deduction_total
+  net_pay
+}
+
+// ok: 추출·검증 통과 / needs_review: 신뢰도 0.8 미만 또는 검증 실패 / missing: 미발견(value는 null).
+enum FieldStatus {
+  OK
+  NEEDS_REVIEW
+  MISSING
+}
+
+enum RuleStatus {
+  DRAFT
+  VERIFIED
+}
+
+enum Severity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum TaskStatus {
+  TODO
+  DONE
+  NOT_APPLICABLE
+}
+
+model User {
+  id            String     @id @default(cuid())
+  createdAt     DateTime   @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime   @updatedAt @db.Timestamptz(3)
+  authSubject   String     @unique
+  // 감면/공제 점검 입력값. 직접 입력받을지 여부는 팀 결정 사항(미정).
+  birthYear     Int?
+  joinedOn      DateTime?  @db.Date
+  isSmeEmployee Boolean?
+  termsVersion  String?
+  consentedAt   DateTime?  @db.Timestamptz(3)
+  payslips      Payslip[]
+  tasks         UserTask[]
+}
+
+model Payslip {
+  id            String         @id @default(cuid())
+  createdAt     DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @db.Timestamptz(3)
+  userId        String
+  // 귀속 월. 예: "2026-03"
+  payPeriod     String
+  companyName   String?
+  // 표준 필드로 매핑하지 못한 원문 항목 [{ label, amount }]
+  unmappedItems Json           @default("[]")
+  // 검증 경고 [{ field, reason }]
+  warnings      Json           @default("[]")
+  user          User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  fields        PayslipField[]
+  findings      CheckFinding[]
+
+  @@index([userId, payPeriod])
+}
+
+model PayslipField {
+  id            String          @id @default(cuid())
+  payslipId     String
+  key           PayslipFieldKey
+  // 월 기준 정수 원. missing이면 null.
+  value         Int?
+  confidence    Float?
+  sourceLabel   String?
+  status        FieldStatus
+  // 사용자가 확인·수정한 값만 규칙 엔진으로 넘긴다.
+  userConfirmed Boolean         @default(false)
+  payslip       Payslip         @relation(fields: [payslipId], references: [id], onDelete: Cascade)
+
+  @@unique([payslipId, key])
+}
+
+model TaxRuleVersion {
+  id         String         @id @default(cuid())
+  createdAt  DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime       @updatedAt @db.Timestamptz(3)
+  taxYear    Int
+  version    String
+  status     RuleStatus     @default(DRAFT)
+  // 점검 규칙 파라미터. 요건이 늘어나면 별도 테이블로 분리한다.
+  parameters Json
+  sourceUrl  String?
+  verifiedAt DateTime?      @db.Timestamptz(3)
+  findings   CheckFinding[]
+
+  @@unique([taxYear, version])
+}
+
+model CheckFinding {
+  id               String         @id @default(cuid())
+  createdAt        DateTime       @default(now()) @db.Timestamptz(3)
+  payslipId        String
+  taxRuleVersionId String
+  ruleCode         String
+  severity         Severity
+  message          String
+  // 항상 예상치 안내. 계산/판정 결과를 확정처럼 보여주지 않는다.
+  isEstimate       Boolean        @default(true)
+  payslip          Payslip        @relation(fields: [payslipId], references: [id], onDelete: Restrict)
+  taxRuleVersion   TaxRuleVersion @relation(fields: [taxRuleVersionId], references: [id], onDelete: Restrict)
+  tasks            UserTask[]
+
+  @@index([payslipId])
+  @@index([taxRuleVersionId])
+}
+
+model TaskTemplate {
+  id          String     @id @default(cuid())
+  createdAt   DateTime   @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime   @updatedAt @db.Timestamptz(3)
+  key         String     @unique
+  title       String
+  description String?
+  // 상대 기한 규칙. 형식은 팀 결정 사항(미정). 예: "END_OF_MONTH_AFTER_JOIN"
+  dueRule     String
+  tasks       UserTask[]
+}
+
+model UserTask {
+  id         String        @id @default(cuid())
+  createdAt  DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime      @updatedAt @db.Timestamptz(3)
+  userId     String
+  templateId String
+  // 점검 결과에서 생성된 할 일이면 연결. 일반 입사 후 할 일이면 null.
+  findingId  String?
+  status     TaskStatus    @default(TODO)
+  dueOn      DateTime?     @db.Date
+  user       User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  template   TaskTemplate  @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  finding    CheckFinding? @relation(fields: [findingId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, templateId])
+  @@index([findingId])
+}
