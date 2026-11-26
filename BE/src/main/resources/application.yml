@@ -33,6 +33,10 @@ server:
 
 # 서비스 자체 설정
 otp:
+  cors:
+    # 브라우저에서 이 API를 호출할 수 있는 프론트 주소 목록(쉼표로 구분).
+    # 기본값: 로컬 개발 서버(Next.js 3000, Vite 5173). 배포 시 환경변수 CORS_ALLOWED_ORIGINS로 실제 도메인을 넣는다.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
   ocr:
     # fake: 고정 샘플을 돌려주는 가짜 OCR(FakeOcrClient). 실제 제공자 연동 후 그 구현의 이름으로 바꾼다.
     provider: fake
