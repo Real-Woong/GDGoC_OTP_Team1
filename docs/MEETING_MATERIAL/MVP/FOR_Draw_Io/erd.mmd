@@ -1,14 +1,14 @@
 erDiagram
-  User ||--o{ Payslip : "명세서 업로드"
-  User ||--o{ UserTask : "할 일 보유"
+  users ||--o{ Payslip : "명세서 업로드"
+  users ||--o{ UserTask : "할 일 보유"
   Payslip ||--o{ PayslipField : "필드 포함"
   Payslip ||--o{ CheckFinding : "점검 결과 생성"
   TaxRuleVersion ||--o{ CheckFinding : "규칙 버전 기준 판정"
   CheckFinding |o--o{ UserTask : "할 일 생성"
   TaskTemplate ||--o{ UserTask : "템플릿에서 생성"
 
-  User {
-    String id PK "사용자 ID"
+  users {
+    Long id PK "사용자 ID"
     String authSubject "인증 식별자"
     Int birthYear "출생연도"
     Date joinedOn "입사일"
@@ -17,16 +17,16 @@ erDiagram
     DateTime consentedAt "동의 시각"
   }
   Payslip {
-    String id PK "명세서 ID"
-    String userId FK "사용자"
+    Long id PK "명세서 ID"
+    Long userId FK "사용자"
     String payPeriod "귀속 월 2026-03"
     String companyName "회사명"
     Json unmappedItems "표준화 못한 항목"
     Json warnings "검증 경고"
   }
   PayslipField {
-    String id PK "필드 ID"
-    String payslipId FK "명세서"
+    Long id PK "필드 ID"
+    Long payslipId FK "명세서"
     String key "표준 필드 키 14종"
     Int value "월 금액 원 단위"
     Float confidence "신뢰도"
@@ -35,7 +35,7 @@ erDiagram
     Boolean userConfirmed "사용자 확인 여부"
   }
   TaxRuleVersion {
-    String id PK "규칙 버전 ID"
+    Long id PK "규칙 버전 ID"
     Int taxYear "귀속연도"
     String version "버전"
     String status "DRAFT VERIFIED"
@@ -44,26 +44,26 @@ erDiagram
     DateTime verifiedAt "검증 시각"
   }
   CheckFinding {
-    String id PK "점검 결과 ID"
-    String payslipId FK "명세서"
-    String taxRuleVersionId FK "규칙 버전"
+    Long id PK "점검 결과 ID"
+    Long payslipId FK "명세서"
+    Long taxRuleVersionId FK "규칙 버전"
     String ruleCode "규칙 코드"
     String severity "INFO WARNING CRITICAL"
     String message "안내 문구"
     Boolean isEstimate "예상치 여부"
   }
   TaskTemplate {
-    String id PK "템플릿 ID"
+    Long id PK "템플릿 ID"
     String key "고유 키"
     String title "제목"
     String description "설명"
     String dueRule "상대 기한 규칙"
   }
   UserTask {
-    String id PK "할 일 ID"
-    String userId FK "사용자"
-    String templateId FK "템플릿"
-    String findingId FK "점검 결과 선택"
+    Long id PK "할 일 ID"
+    Long userId FK "사용자"
+    Long templateId FK "템플릿"
+    Long findingId FK "점검 결과 선택"
     String status "TODO DONE NOT_APPLICABLE"
     Date dueOn "기한"
   }

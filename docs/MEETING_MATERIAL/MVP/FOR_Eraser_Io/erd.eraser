@@ -1,11 +1,12 @@
 // Eraser 다이어그램 코드: 데모용 MVP ERD (7개 테이블)
 // 사용법: Eraser에서 새 Entity Relationship 다이어그램을 만들고 이 내용을 코드 창에 붙여넣는다.
-// 테이블과 컬럼 이름은 prisma/schema.prisma와 같게 영어로 두고, 설명은 한글 주석으로 적었다.
+// 테이블과 컬럼 이름은 영어로 두고, 설명은 한글 주석으로 적었다.
+// ID 타입과 users 테이블명은 BE 구현(BE/src/main/resources/db/migration/V1__init.sql) 기준이다.
 title 사회초년생 급여명세서 점검 - MVP ERD
 
 // 사용자: 가입, 동의, 감면 점검 입력값
-User [icon: user, color: blue] {
-  id string pk // 사용자 ID
+users [icon: user, color: blue] {
+  id long pk // 사용자 ID
   authSubject string // 인증 식별자
   birthYear int // 출생연도
   joinedOn date // 입사일
@@ -16,8 +17,8 @@ User [icon: user, color: blue] {
 
 // 급여명세서 1건 (원본 파일은 저장하지 않음)
 Payslip [icon: file-text, color: green] {
-  id string pk // 명세서 ID
-  userId string // 사용자
+  id long pk // 명세서 ID
+  userId long // 사용자
   payPeriod string // 귀속 월 예 2026-03
   companyName string // 회사명
   unmappedItems json // 표준화하지 못한 항목
@@ -26,8 +27,8 @@ Payslip [icon: file-text, color: green] {
 
 // 명세서의 표준 필드 1칸 (14종 key)
 PayslipField [icon: list, color: green] {
-  id string pk // 필드 ID
-  payslipId string // 명세서
+  id long pk // 필드 ID
+  payslipId long // 명세서
   key string // 표준 필드 키
   value int // 월 금액 원 단위 없으면 null
   confidence float // 신뢰도
@@ -38,7 +39,7 @@ PayslipField [icon: list, color: green] {
 
 // 점검에 쓰는 규칙 버전
 TaxRuleVersion [icon: book, color: yellow] {
-  id string pk // 규칙 버전 ID
+  id long pk // 규칙 버전 ID
   taxYear int // 귀속연도
   version string // 버전
   status string // DRAFT VERIFIED
@@ -49,9 +50,9 @@ TaxRuleVersion [icon: book, color: yellow] {
 
 // 점검 결과 1건
 CheckFinding [icon: search, color: orange] {
-  id string pk // 점검 결과 ID
-  payslipId string // 명세서
-  taxRuleVersionId string // 규칙 버전
+  id long pk // 점검 결과 ID
+  payslipId long // 명세서
+  taxRuleVersionId long // 규칙 버전
   ruleCode string // 규칙 코드
   severity string // INFO WARNING CRITICAL
   message string // 안내 문구
@@ -60,7 +61,7 @@ CheckFinding [icon: search, color: orange] {
 
 // 할 일 원본
 TaskTemplate [icon: clipboard, color: purple] {
-  id string pk // 템플릿 ID
+  id long pk // 템플릿 ID
   key string // 고유 키
   title string // 제목
   description string // 설명
@@ -69,17 +70,17 @@ TaskTemplate [icon: clipboard, color: purple] {
 
 // 사용자별 할 일
 UserTask [icon: check-square, color: purple] {
-  id string pk // 할 일 ID
-  userId string // 사용자
-  templateId string // 템플릿
-  findingId string // 점검 결과 선택
+  id long pk // 할 일 ID
+  userId long // 사용자
+  templateId long // 템플릿
+  findingId long // 점검 결과 선택
   status string // TODO DONE NOT_APPLICABLE
   dueOn date // 기한
 }
 
 // 관계 (많은 쪽 > 한쪽)
-Payslip.userId > User.id
-UserTask.userId > User.id
+Payslip.userId > users.id
+UserTask.userId > users.id
 PayslipField.payslipId > Payslip.id
 CheckFinding.payslipId > Payslip.id
 CheckFinding.taxRuleVersionId > TaxRuleVersion.id
