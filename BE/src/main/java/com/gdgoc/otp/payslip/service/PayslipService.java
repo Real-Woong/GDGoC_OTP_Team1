@@ -2,33 +2,63 @@ package com.gdgoc.otp.payslip.service;
 
 import com.gdgoc.otp.global.exception.BusinessException;
 import com.gdgoc.otp.global.exception.ErrorCode;
+import com.gdgoc.otp.infra.ocr.OcrResult;
 import com.gdgoc.otp.payslip.domain.Payslip;
 import com.gdgoc.otp.payslip.domain.PayslipField;
 import com.gdgoc.otp.payslip.domain.PayslipFieldKey;
+import com.gdgoc.otp.payslip.domain.PayslipWarning;
 import com.gdgoc.otp.payslip.dto.ConfirmFieldsRequest;
 import com.gdgoc.otp.payslip.dto.PayslipDetailResponse;
 import com.gdgoc.otp.payslip.dto.PayslipSummaryResponse;
 import com.gdgoc.otp.payslip.repository.PayslipRepository;
+import com.gdgoc.otp.user.domain.User;
+import com.gdgoc.otp.user.service.UserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 /**
- * 명세서 조회와 필드 확인.
+ * 명세서 저장·조회·필드 확인.
  *
- * <p>업로드(OCR)는 6단계에서 추가한다. 지금은 이미 저장된 명세서를 보고 확인하는 기능만 있다.</p>
+ * <p>업로드의 앞부분(파일 검사, OCR 호출)은 {@link PayslipUploadService}가 하고,
+ * 여기서는 OCR 결과를 받아 DB에 저장하는 부분({@link #saveUploaded})만 한다.</p>
  */
 @Service
 @Transactional(readOnly = true)
 public class PayslipService {
 
     private final PayslipRepository payslipRepository;
+    private final UserService userService;
+    private final PayslipAssembler payslipAssembler;
 
-    public PayslipService(PayslipRepository payslipRepository) {
+    public PayslipService(PayslipRepository payslipRepository, UserService userService,
+                          PayslipAssembler payslipAssembler) {
         this.payslipRepository = payslipRepository;
+        this.userService = userService;
+        this.payslipAssembler = payslipAssembler;
+    }
+
+    /**
+     * OCR 결과를 명세서로 저장한다. PayslipUploadService가 OCR을 마친 뒤 호출한다.
+     *
+     * <p>같은 귀속월 명세서가 이미 있어도 막지 않고 경고만 남긴다.
+     * (정정 명세서를 다시 받는 경우가 있기 때문이다.)</p>
+     */
+    @Transactional
+    public PayslipDetailResponse saveUploaded(Long userId, String payPeriod, OcrResult ocrResult) {
+        User user = userService.getUser(userId);
+
+        List<PayslipWarning> warnings = new ArrayList<>();
+        if (payslipRepository.existsByUser_IdAndPayPeriod(userId, payPeriod)) {
+            warnings.add(new PayslipWarning(null, "같은 귀속월(" + payPeriod + ") 명세서가 이미 있습니다."));
+        }
+
+        Payslip payslip = payslipAssembler.assemble(user, payPeriod, ocrResult, warnings);
+        return PayslipDetailResponse.from(payslipRepository.save(payslip));
     }
 
     /** 내 명세서 목록(최근 귀속월 먼저). */

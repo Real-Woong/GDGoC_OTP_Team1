@@ -30,7 +30,9 @@ public enum ErrorCode {
     PAYSLIP_NOT_FOUND(HttpStatus.NOT_FOUND, "명세서를 찾을 수 없습니다."),
     PAYSLIP_FIELD_NOT_FOUND(HttpStatus.NOT_FOUND, "명세서 항목을 찾을 수 없습니다."),
     PAYSLIP_NOT_CONFIRMED(HttpStatus.BAD_REQUEST, "확인하지 않은 항목이 있어 점검할 수 없습니다."),
-    OCR_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "명세서를 읽지 못했습니다. 더 선명한 이미지로 다시 올려 주세요."),
+    INVALID_FILE(HttpStatus.BAD_REQUEST, "PNG, JPG, PDF 파일만 올릴 수 있습니다."),
+    PAY_PERIOD_REQUIRED(HttpStatus.BAD_REQUEST, "귀속월을 읽지 못했습니다. 귀속월(YYYY-MM)을 입력해 주세요."),
+    OCR_FAILED(HttpStatus.UNPROCESSABLE_CONTENT, "명세서를 읽지 못했습니다. 더 선명한 이미지로 다시 올려 주세요."),
 
     // ── 규칙 ──
     TAX_RULE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 연도의 점검 규칙이 없습니다."),

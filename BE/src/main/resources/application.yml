@@ -30,3 +30,9 @@ spring:
 
 server:
   port: 8080
+
+# 서비스 자체 설정
+otp:
+  ocr:
+    # fake: 고정 샘플을 돌려주는 가짜 OCR(FakeOcrClient). 실제 제공자 연동 후 그 구현의 이름으로 바꾼다.
+    provider: fake
