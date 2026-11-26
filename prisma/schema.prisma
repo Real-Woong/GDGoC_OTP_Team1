@@ -1,6 +1,12 @@
 // PostgreSQL / Prisma ORM. 데모용 축소 스키마 (docs/MEETING_MATERIAL/MVP/FOR_Draw_Io/erd-mvp.drawio 기준, 7개 테이블).
 // 기존 20개 테이블 버전은 docs/ARCHIVE/FULL_20_TABLES/schema-full-20-tables.prisma.txt 에 보관했다.
 //
+// ID와 사용자 테이블명은 BE 구현(BE/src/main/resources/db/migration/V1__init.sql)에 맞췄다:
+//  - 모든 ID는 BigInt 자동 증가 (Java Long, PostgreSQL BIGINT identity). Prisma의 Int는 32비트라 BigInt를 쓴다.
+//  - User 모델의 테이블 이름은 users (@@map).
+// 나머지 테이블·컬럼 이름은 아직 Prisma 기본값(모델명, camelCase)이라 BE의 snake_case 테이블과 다르다.
+// 이 스키마로 BE DB에 바로 붙으려면 모든 모델에 @@map, 컬럼에 @map이 더 필요하다(스키마 기준 결정 후 처리).
+//
 // 데모 단순화 (실서비스 전환 시 다시 넣을 것):
 //  - 개인 데이터 암호화 없음 (금액은 평문 Int 원 단위)
 //  - soft delete(deletedAt) 없음
@@ -58,7 +64,7 @@ enum TaskStatus {
 }
 
 model User {
-  id            String     @id @default(cuid())
+  id            BigInt     @id @default(autoincrement())
   createdAt     DateTime   @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime   @updatedAt @db.Timestamptz(3)
   authSubject   String     @unique
@@ -70,13 +76,16 @@ model User {
   consentedAt   DateTime?  @db.Timestamptz(3)
   payslips      Payslip[]
   tasks         UserTask[]
+
+  // user는 PostgreSQL 예약어라 실제 테이블 이름은 users (BE V1__init.sql과 같음)
+  @@map("users")
 }
 
 model Payslip {
-  id            String         @id @default(cuid())
+  id            BigInt         @id @default(autoincrement())
   createdAt     DateTime       @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime       @updatedAt @db.Timestamptz(3)
-  userId        String
+  userId        BigInt
   // 귀속 월. 예: "2026-03"
   payPeriod     String
   companyName   String?
@@ -92,8 +101,8 @@ model Payslip {
 }
 
 model PayslipField {
-  id            String          @id @default(cuid())
-  payslipId     String
+  id            BigInt          @id @default(autoincrement())
+  payslipId     BigInt
   key           PayslipFieldKey
   // 월 기준 정수 원. missing이면 null.
   value         Int?
@@ -108,7 +117,7 @@ model PayslipField {
 }
 
 model TaxRuleVersion {
-  id         String         @id @default(cuid())
+  id         BigInt         @id @default(autoincrement())
   createdAt  DateTime       @default(now()) @db.Timestamptz(3)
   updatedAt  DateTime       @updatedAt @db.Timestamptz(3)
   taxYear    Int
@@ -124,10 +133,10 @@ model TaxRuleVersion {
 }
 
 model CheckFinding {
-  id               String         @id @default(cuid())
+  id               BigInt         @id @default(autoincrement())
   createdAt        DateTime       @default(now()) @db.Timestamptz(3)
-  payslipId        String
-  taxRuleVersionId String
+  payslipId        BigInt
+  taxRuleVersionId BigInt
   ruleCode         String
   severity         Severity
   message          String
@@ -142,7 +151,7 @@ model CheckFinding {
 }
 
 model TaskTemplate {
-  id          String     @id @default(cuid())
+  id          BigInt     @id @default(autoincrement())
   createdAt   DateTime   @default(now()) @db.Timestamptz(3)
   updatedAt   DateTime   @updatedAt @db.Timestamptz(3)
   key         String     @unique
@@ -154,13 +163,13 @@ model TaskTemplate {
 }
 
 model UserTask {
-  id         String        @id @default(cuid())
+  id         BigInt        @id @default(autoincrement())
   createdAt  DateTime      @default(now()) @db.Timestamptz(3)
   updatedAt  DateTime      @updatedAt @db.Timestamptz(3)
-  userId     String
-  templateId String
+  userId     BigInt
+  templateId BigInt
   // 점검 결과에서 생성된 할 일이면 연결. 일반 입사 후 할 일이면 null.
-  findingId  String?
+  findingId  BigInt?
   status     TaskStatus    @default(TODO)
   dueOn      DateTime?     @db.Date
   user       User          @relation(fields: [userId], references: [id], onDelete: Restrict)
