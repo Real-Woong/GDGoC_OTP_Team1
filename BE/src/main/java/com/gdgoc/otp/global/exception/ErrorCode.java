@@ -33,6 +33,10 @@ public enum ErrorCode {
     INVALID_FILE(HttpStatus.BAD_REQUEST, "PNG, JPG, PDF 파일만 올릴 수 있습니다."),
     PAY_PERIOD_REQUIRED(HttpStatus.BAD_REQUEST, "귀속월을 읽지 못했습니다. 귀속월(YYYY-MM)을 입력해 주세요."),
     OCR_FAILED(HttpStatus.UNPROCESSABLE_CONTENT, "명세서를 읽지 못했습니다. 더 선명한 이미지로 다시 올려 주세요."),
+    // 428 Precondition Required: "이 요청을 처리하려면 먼저 필요한 것(비밀번호)이 있다"는 뜻. OCR 서버와 같은 상태 코드다.
+    // FE는 code로 구분해 비밀번호 입력창을 띄우고, 같은 파일과 pdfPassword를 함께 다시 보낸다.
+    PDF_PASSWORD_REQUIRED(HttpStatus.PRECONDITION_REQUIRED, "비밀번호가 걸린 PDF입니다. 비밀번호를 입력해 주세요."),
+    PDF_PASSWORD_INVALID(HttpStatus.PRECONDITION_REQUIRED, "PDF 비밀번호가 맞지 않습니다. 다시 입력해 주세요."),
 
     // ── 규칙 ──
     TAX_RULE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 연도의 점검 규칙이 없습니다."),

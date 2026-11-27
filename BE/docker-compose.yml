@@ -1,4 +1,4 @@
-# 로컬 개발용 PostgreSQL.
+# 로컬 개발용 PostgreSQL (+ 선택: OCR 서버).
 #
 # 사용법 (BE 폴더에서):
 #   docker compose up -d      DB 켜기 (백그라운드)
@@ -38,6 +38,21 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+    restart: unless-stopped
+
+  # 팀 OCR 서버(OCR/ocr-server). 무거워서(모델 포함 이미지 빌드에 수 분) 기본으로는 켜지 않는다.
+  # 켜기:  docker compose --profile ocr up -d      (처음엔 이미지 빌드 때문에 오래 걸린다)
+  # BE에서 쓰기: OCR_PROVIDER=http ./gradlew bootRun
+  # 상태 확인: curl http://localhost:8000/health  ("model_loaded": true면 준비 완료)
+  ocr:
+    profiles: ["ocr"]
+    build: ../OCR/ocr-server
+    container_name: otp-ocr
+    environment:
+      # 비워 두면 OCR 서버가 키 없이 동작한다(로컬 개발용). 설정하면 BE도 같은 OCR_API_KEY로 실행해야 한다.
+      OCR_API_KEY: ${OCR_API_KEY:-}
+    ports:
+      - "${OCR_PORT:-8000}:8000"
     restart: unless-stopped
 
 volumes:

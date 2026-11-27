@@ -55,7 +55,8 @@ public class PayslipController {
      * POST /api/payslips
      * Content-Type: multipart/form-data
      *   file      = (명세서 이미지/PDF, 필수)
-     *   payPeriod = "2026-03" (선택. 없으면 OCR이 읽은 값 사용)
+     *   payPeriod   = "2026-03" (선택. 없으면 OCR이 읽은 값 사용)
+     *   pdfPassword = "990101"  (선택. 비밀번호 PDF일 때만. 처음엔 없이 보내고 428 PDF_PASSWORD_REQUIRED를 받으면 다시 보낸다)
      * </pre>
      * <p>응답은 상세 조회와 같은 형식이다. 프론트는 이 응답으로 바로 확인 화면을 그린다.</p>
      */
@@ -63,8 +64,9 @@ public class PayslipController {
     @ResponseStatus(HttpStatus.CREATED)
     public PayslipDetailResponse upload(@CurrentUser LoginUser loginUser,
                                         @RequestPart("file") MultipartFile file,
-                                        @RequestParam(required = false) String payPeriod) {
-        return payslipUploadService.upload(loginUser.id(), file, payPeriod);
+                                        @RequestParam(required = false) String payPeriod,
+                                        @RequestParam(required = false) String pdfPassword) {
+        return payslipUploadService.upload(loginUser.id(), file, payPeriod, pdfPassword);
     }
 
     @GetMapping

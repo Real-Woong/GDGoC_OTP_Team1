@@ -26,6 +26,7 @@ import java.util.Optional;
  *   <li>필드 코드 → PayslipFieldKey 변환. 모르는 코드는 unmappedItems로 옮긴다(버리지 않음).</li>
  *   <li>같은 코드가 두 번 오면 첫 번째만 쓰고 경고를 남긴다(DB unique 제약 보호).</li>
  *   <li>14개 중 OCR이 아예 안 준 필드도 MISSING 행으로 만든다. 확인 화면에 "못 읽은 칸"으로 보여주기 위해서다.</li>
+ *   <li>OCR이 needs_review로 표시한 필드와 OCR 경고를 그대로 반영한다.</li>
  *   <li>합계 검증에 실패하면 관련 합계 필드를 NEEDS_REVIEW로 바꾸고 경고를 남긴다
  *       (OCR 명세: needs_review = 신뢰도 0.8 미만 "또는 검증 실패").</li>
  * </ol>
@@ -40,6 +41,10 @@ public class PayslipAssembler {
     public Payslip assemble(User user, String payPeriod, OcrResult ocr, List<PayslipWarning> extraWarnings) {
         List<UnmappedItem> unmapped = new ArrayList<>();
         List<PayslipWarning> warnings = new ArrayList<>(extraWarnings);
+        // OCR이 남긴 경고(합계 불일치, 요율 이상 등)도 그대로 옮긴다.
+        for (OcrResult.Warning warning : ocr.warnings()) {
+            warnings.add(new PayslipWarning(warning.field(), warning.message()));
+        }
         Map<PayslipFieldKey, PayslipField> fields = new EnumMap<>(PayslipFieldKey.class);
 
         for (OcrResult.Unmapped item : ocr.unmappedItems()) {
@@ -58,7 +63,12 @@ public class PayslipAssembler {
                 warnings.add(new PayslipWarning(field.code(), "같은 항목이 두 번 인식되어 첫 번째 값만 사용했습니다."));
                 continue;
             }
-            fields.put(key.get(), PayslipField.fromOcr(key.get(), field.value(), clamp(field.confidence()), field.sourceLabel()));
+            PayslipField payslipField = PayslipField.fromOcr(key.get(), field.value(), clamp(field.confidence()), field.sourceLabel());
+            // OCR이 자체 검증에서 "확인 필요"라고 한 값은 신뢰도가 높아도 확인 필요로 둔다(값이 없으면 MISSING 유지).
+            if (field.needsReview()) {
+                payslipField.markNeedsReview();
+            }
+            fields.put(key.get(), payslipField);
         }
 
         // 3. 빠진 필드는 MISSING으로 채운다

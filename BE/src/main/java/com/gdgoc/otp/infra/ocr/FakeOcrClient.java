@@ -23,7 +23,7 @@ import java.util.List;
  * 숫자는 지급 합계 − 공제 합계 = 실수령액이 맞도록 맞춰 두었다.
  *
  * <p>{@code @ConditionalOnProperty}: application.yml의 otp.ocr.provider가 "fake"이거나
- * 값이 없을 때만 이 빈이 등록된다. 실제 구현을 추가하면 provider 값을 바꿔 이 빈을 끈다.</p>
+ * 값이 없을 때만 이 빈이 등록된다. 실제 OCR 서버를 쓰려면 provider를 "http"로 바꾼다({@link HttpOcrClient}).</p>
  */
 @Component
 @ConditionalOnProperty(name = "otp.ocr.provider", havingValue = "fake", matchIfMissing = true)
@@ -32,10 +32,9 @@ public class FakeOcrClient implements OcrClient {
     private static final Logger log = LoggerFactory.getLogger(FakeOcrClient.class);
 
     @Override
-    public OcrResult extract(byte[] content, String contentType) {
-        // 파일 내용은 로그에 남기지 않는다(개인정보). 크기와 형식만 남긴다.
-        log.warn("FakeOcrClient 사용 중: 실제 OCR이 아니라 고정 샘플을 반환합니다. ({} bytes, {})",
-                content.length, contentType);
+    public OcrResult extract(OcrRequest request) {
+        // 파일 내용·비밀번호는 로그에 남기지 않는다(개인정보). OcrRequest.toString이 크기와 형식만 보여 준다.
+        log.warn("FakeOcrClient 사용 중: 실제 OCR이 아니라 고정 샘플을 반환합니다. ({})", request);
 
         return new OcrResult(
                 "2026-03",

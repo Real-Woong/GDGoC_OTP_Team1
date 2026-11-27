@@ -1,6 +1,7 @@
 package com.gdgoc.otp.payslip;
 
 import com.gdgoc.otp.infra.ocr.FakeOcrClient;
+import com.gdgoc.otp.infra.ocr.OcrRequest;
 import com.gdgoc.otp.infra.ocr.OcrResult;
 import com.gdgoc.otp.payslip.domain.FieldStatus;
 import com.gdgoc.otp.payslip.domain.Payslip;
@@ -27,7 +28,7 @@ class PayslipAssemblerTest {
 
     @Test
     void 가짜_OCR_샘플은_경고없이_조립된다() {
-        OcrResult sample = new FakeOcrClient().extract(new byte[]{1}, "image/png");
+        OcrResult sample = new FakeOcrClient().extract(OcrRequest.of(new byte[]{1}, "image/png"));
         Payslip payslip = assembler.assemble(user, "2026-03", sample, List.of());
 
         assertThat(payslip.getFields()).hasSize(14);
@@ -91,5 +92,24 @@ class PayslipAssemblerTest {
         Payslip payslip = assembler.assemble(user, "2026-03", ocr, List.of());
 
         assertThat(payslip.findField(PayslipFieldKey.BASE_SALARY).orElseThrow().getConfidence()).isEqualTo(1.0);
+    }
+
+    @Test
+    void OCR이_확인필요로_표시한_필드와_경고를_반영한다() {
+        OcrResult ocr = new OcrResult("2026-03", null,
+                List.of(
+                        // 신뢰도는 높지만 OCR 자체 검증에서 확인 필요로 표시됨
+                        new OcrResult.Field("income_tax", 0, 0.99, "소득세", true),
+                        // 값이 없으면 확인 필요 표시가 있어도 MISSING 유지
+                        new OcrResult.Field("bonus", null, null, null, true)),
+                List.of(),
+                List.of(new OcrResult.Warning("income_tax", "'소득세' 값을 확인해 주세요.")));
+
+        Payslip payslip = assembler.assemble(user, "2026-03", ocr, List.of());
+
+        assertThat(statusOf(payslip, PayslipFieldKey.INCOME_TAX)).isEqualTo(FieldStatus.NEEDS_REVIEW);
+        assertThat(statusOf(payslip, PayslipFieldKey.BONUS)).isEqualTo(FieldStatus.MISSING);
+        assertThat(payslip.getWarnings())
+                .anySatisfy(w -> assertThat(w.reason()).isEqualTo("'소득세' 값을 확인해 주세요."));
     }
 }
