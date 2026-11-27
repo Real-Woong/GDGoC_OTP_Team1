@@ -1,0 +1,31 @@
+{
+  "_설명": "요율 검증에 쓰는 연도별 설정값. 근로자 부담분 기준. 계산기 팀의 TaxRuleVersion 값과 맞춰서 교체할 것. 지금 값은 개발용 샘플 생성기와 같은 가정값이다.",
+  "years": {
+    "2026": {
+      "status": "개발용 가정값 - 확정 필요",
+      "source_url": null,
+      "national_pension": {
+        "rate": 0.0475,
+        "base_monthly_min": null,
+        "base_monthly_max": null,
+        "_note": "기준소득월액 상한·하한은 확인 후 입력. null이면 상한·하한 없이 계산한다."
+      },
+      "health_insurance": { "rate": 0.03595 },
+      "long_term_care": { "ratio_of_health_insurance": 0.1314 },
+      "employment_insurance": { "rate": 0.009 },
+      "local_income_tax": { "ratio_of_income_tax": 0.1 },
+      "nontaxable_limits": {
+        "meal_allowance": 200000,
+        "car_allowance": 200000
+      }
+    }
+  },
+  "tolerances": {
+    "_설명": "허용 오차. abs는 원 단위, rel은 비율. 둘 중 큰 값까지는 통과로 본다.",
+    "local_income_tax": { "abs": 10, "rel": 0.0 },
+    "long_term_care": { "abs": 10, "rel": 0.005 },
+    "employment_insurance": { "abs": 10, "rel": 0.02 },
+    "national_pension": { "abs": 10, "rel": 0.1 },
+    "health_insurance": { "abs": 10, "rel": 0.1 }
+  }
+}

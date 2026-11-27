@@ -1,0 +1,8 @@
+# 폴더별 담당자. 이 폴더를 고치는 PR이 열리면 담당자가 자동으로 리뷰어로 지정됩니다.
+# 팀원 GitHub 아이디가 정해지면 # 을 지우고 채워 주세요. (예: /backend/ @아이디)
+
+/ocr-server/        @parkeunji8
+/docs/api/ocr-api.md @parkeunji8
+# /backend/         @백엔드-아이디
+# /frontend/        @프론트-아이디
+# /qa/              @QA-아이디

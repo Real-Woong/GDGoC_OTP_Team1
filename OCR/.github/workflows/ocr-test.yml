@@ -1,0 +1,28 @@
+# ocr-server/ 가 바뀌는 PR과 main push에서 OCR 빠른 테스트를 돌린다.
+# 빠른 테스트는 실제 OCR 모델을 쓰지 않으므로 PaddlePaddle·PaddleOCR 없이 설치해 시간을 줄인다.
+name: OCR tests
+
+on:
+  pull_request:
+    paths: ["ocr-server/**", ".github/workflows/ocr-test.yml"]
+  push:
+    branches: [main]
+    paths: ["ocr-server/**", ".github/workflows/ocr-test.yml"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ocr-server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies (without PaddleOCR)
+        run: |
+          grep -v -i '^paddle' requirements.txt > /tmp/requirements-ci.txt
+          pip install -r /tmp/requirements-ci.txt pytest httpx
+      - name: Run fast tests
+        run: python -m pytest

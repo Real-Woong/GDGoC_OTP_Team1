@@ -1,0 +1,62 @@
+{
+  "_설명": "표준 필드별 동의어 목록. 공백·괄호·끝의 '료'는 코드에서 정리하므로 따로 넣지 않아도 된다. 같은 동의어를 두 필드에 넣으면 불러올 때 오류가 난다.",
+  "fields": {
+    "base_salary": {
+      "category": "payment",
+      "synonyms": ["기본급", "기본급여", "기본임금", "기본봉", "본봉", "월급여", "기본월급"]
+    },
+    "meal_allowance": {
+      "category": "payment",
+      "synonyms": ["식대", "중식대", "식비", "식대보조", "식대보조금", "중식비", "식사비", "식대수당"]
+    },
+    "car_allowance": {
+      "category": "payment",
+      "synonyms": ["차량유지비", "자가운전보조금", "자가운전보조비", "차량보조금", "차량지원금", "교통비보조"]
+    },
+    "overtime_pay": {
+      "category": "payment",
+      "synonyms": ["연장근로수당", "연장수당", "야간근로수당", "야간수당", "휴일근로수당", "휴일수당", "시간외수당", "시간외근무수당", "초과근무수당", "연장야간수당"]
+    },
+    "bonus": {
+      "category": "payment",
+      "synonyms": ["상여금", "상여", "성과급", "인센티브", "정기상여", "명절상여"]
+    },
+    "payment_total": {
+      "category": "total",
+      "synonyms": ["지급합계", "지급액계", "지급총액", "지급계", "총지급액", "급여총액", "지급액합계"]
+    },
+    "national_pension": {
+      "category": "deduction",
+      "synonyms": ["국민연금", "연금보험"]
+    },
+    "health_insurance": {
+      "category": "deduction",
+      "synonyms": ["건강보험", "국민건강보험"]
+    },
+    "long_term_care": {
+      "category": "deduction",
+      "synonyms": ["장기요양보험", "장기요양", "노인장기요양보험"]
+    },
+    "employment_insurance": {
+      "category": "deduction",
+      "synonyms": ["고용보험"]
+    },
+    "income_tax": {
+      "category": "deduction",
+      "synonyms": ["소득세", "근로소득세", "갑근세", "갑종근로소득세"]
+    },
+    "local_income_tax": {
+      "category": "deduction",
+      "synonyms": ["지방소득세", "주민세", "지방세"]
+    },
+    "deduction_total": {
+      "category": "total",
+      "synonyms": ["공제합계", "공제액계", "공제총액", "공제계", "총공제액", "공제액합계"]
+    },
+    "net_pay": {
+      "category": "total",
+      "synonyms": ["실지급액", "차인지급액", "실수령액", "실지급", "차감지급액", "실수령"]
+    }
+  },
+  "no_fuzzy_words": ["정산", "환급", "소급", "추징", "연말", "환수", "조정"]
+}

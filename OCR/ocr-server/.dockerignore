@@ -1,0 +1,12 @@
+.venv
+.claude
+samples
+tests
+prepared
+preprocessed
+ocr_results
+masked
+paired
+normalized
+**/__pycache__
+*.pyc

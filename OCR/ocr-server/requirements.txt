@@ -1,0 +1,13 @@
+pypdf>=7.1
+pypdfium2>=5.15
+pillow>=13.0
+cryptography>=50.0  # AES 암호화된 PDF를 pypdf로 열 때 필요
+opencv-python-headless>=5.1
+numpy>=2.5
+paddlepaddle>=3.3
+paddleocr>=3.7
+rapidfuzz>=3.14
+pydantic>=2.14
+fastapi>=0.165
+uvicorn>=0.54
+python-multipart>=0.0.34  # FastAPI 파일 업로드
