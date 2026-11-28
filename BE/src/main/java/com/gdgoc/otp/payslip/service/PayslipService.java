@@ -50,7 +50,30 @@ public class PayslipService {
      */
     @Transactional
     public PayslipDetailResponse saveUploaded(Long userId, String payPeriod, OcrResult ocrResult) {
+        return save(userService.getUser(userId), payPeriod, ocrResult);
+    }
+
+    /**
+     * 직접 입력용 빈 명세서를 만든다. 14개 항목이 모두 MISSING인 상태로 저장되고,
+     * 사용자는 확인 화면에서 금액을 채워 PATCH /fields로 확정한다.
+     *
+     * <p>"빈 OCR 결과"를 저장하는 것과 같아서 업로드와 같은 조립 로직(save)을 그대로 쓴다.
+     * 같은 귀속월 중복 경고도 똑같이 붙는다.</p>
+     *
+     * <p>약관 동의: 파일을 외부 OCR로 보내지는 않지만 급여 정보를 저장하므로 업로드와 똑같이 동의를 요구한다.</p>
+     */
+    @Transactional
+    public PayslipDetailResponse createManual(Long userId, String payPeriod) {
         User user = userService.getUser(userId);
+        if (!user.hasConsented()) {
+            throw new BusinessException(ErrorCode.TERMS_NOT_AGREED);
+        }
+        OcrResult empty = new OcrResult(payPeriod, null, List.of(), List.of());
+        return save(user, payPeriod, empty);
+    }
+
+    private PayslipDetailResponse save(User user, String payPeriod, OcrResult ocrResult) {
+        Long userId = user.getId();
 
         List<PayslipWarning> warnings = new ArrayList<>();
         if (payslipRepository.existsByUser_IdAndPayPeriod(userId, payPeriod)) {

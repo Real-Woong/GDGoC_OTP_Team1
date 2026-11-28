@@ -3,6 +3,7 @@ package com.gdgoc.otp.payslip.controller;
 import com.gdgoc.otp.global.auth.CurrentUser;
 import com.gdgoc.otp.global.auth.LoginUser;
 import com.gdgoc.otp.payslip.dto.ConfirmFieldsRequest;
+import com.gdgoc.otp.payslip.dto.CreateManualPayslipRequest;
 import com.gdgoc.otp.payslip.dto.PayslipDetailResponse;
 import com.gdgoc.otp.payslip.dto.PayslipSummaryResponse;
 import com.gdgoc.otp.payslip.service.PayslipService;
@@ -33,6 +34,7 @@ import java.util.List;
  *   <li>GET   /api/payslips/{id}         상세(확인 화면)</li>
  *   <li>PATCH /api/payslips/{id}/fields  필드 확인·수정 (일부만 바꾸므로 PATCH)</li>
  *   <li>POST  /api/payslips              업로드(multipart) → OCR → 저장, 201</li>
+ *   <li>POST  /api/payslips/manual       직접 입력용 빈 명세서 만들기(JSON), 201</li>
  * </ul>
  */
 @RestController
@@ -67,6 +69,23 @@ public class PayslipController {
                                         @RequestParam(required = false) String payPeriod,
                                         @RequestParam(required = false) String pdfPassword) {
         return payslipUploadService.upload(loginUser.id(), file, payPeriod, pdfPassword);
+    }
+
+    /**
+     * 직접 입력용 빈 명세서 만들기. OCR이 실패했을 때 FE가 "직접 입력" 버튼으로 부른다.
+     *
+     * <pre>
+     * POST /api/payslips/manual
+     * { "payPeriod": "2026-03" }
+     * </pre>
+     * <p>응답은 업로드와 같은 상세 형식이고 14개 항목이 모두 MISSING이다.
+     * FE는 같은 확인 화면에서 값을 입력받아 PATCH /api/payslips/{id}/fields로 보낸다.</p>
+     */
+    @PostMapping(path = "/manual", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public PayslipDetailResponse createManual(@CurrentUser LoginUser loginUser,
+                                              @Valid @RequestBody CreateManualPayslipRequest request) {
+        return payslipService.createManual(loginUser.id(), request.payPeriod());
     }
 
     @GetMapping

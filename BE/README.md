@@ -68,6 +68,7 @@ curl -X POST localhost:8080/api/payslips/1/check -H 'X-User-Subject: chulsoo'
 | PUT | `/api/users/me/profile` | 출생연도·입사일·중소기업 여부 |
 | POST | `/api/users/me/terms-agreement` | 약관 동의 |
 | POST | `/api/payslips` | 명세서 업로드 (multipart: `file`, 선택 `payPeriod`, `pdfPassword`) |
+| POST | `/api/payslips/manual` | 직접 입력용 빈 명세서 (JSON `{"payPeriod":"2026-03"}`, OCR 실패 시) |
 | GET | `/api/payslips` | 내 명세서 목록 |
 | GET | `/api/payslips/{id}` | 상세(확인 화면) |
 | PATCH | `/api/payslips/{id}/fields` | 필드 확인·수정 |
