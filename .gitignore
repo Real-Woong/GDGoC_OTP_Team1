@@ -37,6 +37,8 @@ samples/
 uploads/
 *.pdf
 *.heic
+# 예외: 가짜 데이터로 만든 테스트 샘플만 허용 (이 폴더에 실제 명세서를 넣지 말 것)
+!docs/SAMPLE_PAYSLIP/*.pdf
 
 # 편집기
 .vscode/
