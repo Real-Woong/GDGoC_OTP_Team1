@@ -110,6 +110,23 @@ public class PayslipField {
     }
 
     /**
+     * OCR이 직접 "확인 필요 여부"를 판정한 결과로 필드를 만든다(팀 OCR 서버).
+     *
+     * <p>OCR 판정이 null이면 판정이 없는 것이므로 {@link #fromOcr(PayslipFieldKey, Integer, Double, String)}처럼
+     * 신뢰도로 정한다. 값이 없으면 판정과 관계없이 MISSING이다.</p>
+     *
+     * @param ocrNeedsReview OCR 판정. true면 NEEDS_REVIEW, false면 OK, null이면 BE가 신뢰도로 판정
+     */
+    public static PayslipField fromOcr(PayslipFieldKey key, Integer value, Double confidence, String sourceLabel,
+                                       Boolean ocrNeedsReview) {
+        PayslipField field = fromOcr(key, value, confidence, sourceLabel);
+        if (ocrNeedsReview != null && value != null) {
+            field.status = ocrNeedsReview ? FieldStatus.NEEDS_REVIEW : FieldStatus.OK;
+        }
+        return field;
+    }
+
+    /**
      * 값과 신뢰도로 상태를 정한다.
      * - 값이 없으면 MISSING
      * - 신뢰도를 모르거나 0.8 미만이면 NEEDS_REVIEW

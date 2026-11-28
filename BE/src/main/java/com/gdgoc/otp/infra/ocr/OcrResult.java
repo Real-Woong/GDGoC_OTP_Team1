@@ -15,13 +15,16 @@ import java.util.List;
  * @param fields        추출한 필드들
  * @param unmappedItems 표준 필드로 못 맞춘 항목들(원문 이름과 금액)
  * @param warnings      OCR이 직접 남긴 경고(합계 불일치, 요율 이상 등). 명세서 확인 화면에 그대로 보여 준다
+ * @param validated     OCR이 합계·실수령액 검증을 직접 했는지. true면 BE는 같은 검증을 다시 하지 않는다
+ *                      (같은 문제가 경고로 두 번 나오지 않도록). 가짜 OCR처럼 검증하지 않는 구현은 false
  */
 public record OcrResult(
         String payPeriod,
         String companyName,
         List<Field> fields,
         List<Unmapped> unmappedItems,
-        List<Warning> warnings
+        List<Warning> warnings,
+        boolean validated
 ) {
     public OcrResult {
         fields = fields == null ? List.of() : List.copyOf(fields);
@@ -29,9 +32,15 @@ public record OcrResult(
         warnings = warnings == null ? List.of() : List.copyOf(warnings);
     }
 
-    /** 경고 없이 만들 때(가짜 OCR, 테스트). */
+    /** 경고·자체 검증 없이 만들 때(가짜 OCR, 직접 입력, 테스트). */
     public OcrResult(String payPeriod, String companyName, List<Field> fields, List<Unmapped> unmappedItems) {
-        this(payPeriod, companyName, fields, unmappedItems, List.of());
+        this(payPeriod, companyName, fields, unmappedItems, List.of(), false);
+    }
+
+    /** 경고는 있지만 합계 검증은 하지 않은 결과. */
+    public OcrResult(String payPeriod, String companyName, List<Field> fields, List<Unmapped> unmappedItems,
+                     List<Warning> warnings) {
+        this(payPeriod, companyName, fields, unmappedItems, warnings, false);
     }
 
     /**
@@ -39,15 +48,18 @@ public record OcrResult(
      * @param value       금액(원). 못 읽었으면 null
      * @param confidence  신뢰도 0.0~1.0. 모르면 null
      * @param sourceLabel 명세서 원문 항목명. 예: "중식대"
-     * @param needsReview OCR이 "사용자 확인 필요"라고 표시했는지.
-     *                    신뢰도가 높아도 OCR 자체 검증(예: 요율과 안 맞음)에 걸리면 true가 될 수 있다.
-     *                    BE는 신뢰도 기준(0.8 미만)과 이 값 중 하나라도 해당하면 NEEDS_REVIEW로 둔다.
+     * @param needsReview OCR의 "사용자 확인 필요" 판정.
+     *                    <ul>
+     *                      <li>true/false: OCR이 직접 판정했다(팀 OCR 서버). BE는 이 판정을 그대로 따른다.
+     *                          OCR은 신뢰도뿐 아니라 요율·합계 검증까지 보고 판정하므로 BE의 단순 기준보다 정확하다.</li>
+     *                      <li>null: OCR이 판정을 주지 않았다(가짜 OCR 등). BE가 신뢰도 0.8 기준으로 판정한다.</li>
+     *                    </ul>
      */
-    public record Field(String code, Integer value, Double confidence, String sourceLabel, boolean needsReview) {
+    public record Field(String code, Integer value, Double confidence, String sourceLabel, Boolean needsReview) {
 
-        /** OCR의 확인 필요 표시 없이 만들 때(가짜 OCR, 테스트). */
+        /** OCR 판정 없이 만들 때(가짜 OCR, 테스트). BE가 신뢰도로 판정한다. */
         public Field(String code, Integer value, Double confidence, String sourceLabel) {
-            this(code, value, confidence, sourceLabel, false);
+            this(code, value, confidence, sourceLabel, null);
         }
     }
 

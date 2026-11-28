@@ -192,6 +192,8 @@ public class HttpOcrClient implements OcrClient {
         }
 
         // OCR 서버는 회사명을 주지 않는다.
-        return new OcrResult(response.payPeriod(), null, fields, unmapped, warnings);
+        // validation이 있으면 OCR이 합계·실수령액 검증을 이미 했으므로 BE는 다시 검증하지 않는다.
+        boolean validated = response.validation() != null;
+        return new OcrResult(response.payPeriod(), null, fields, unmapped, warnings, validated);
     }
 }

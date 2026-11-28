@@ -26,8 +26,8 @@ import java.util.Optional;
  *   <li>필드 코드 → PayslipFieldKey 변환. 모르는 코드는 unmappedItems로 옮긴다(버리지 않음).</li>
  *   <li>같은 코드가 두 번 오면 첫 번째만 쓰고 경고를 남긴다(DB unique 제약 보호).</li>
  *   <li>14개 중 OCR이 아예 안 준 필드도 MISSING 행으로 만든다. 확인 화면에 "못 읽은 칸"으로 보여주기 위해서다.</li>
- *   <li>OCR이 needs_review로 표시한 필드와 OCR 경고를 그대로 반영한다.</li>
- *   <li>합계 검증에 실패하면 관련 합계 필드를 NEEDS_REVIEW로 바꾸고 경고를 남긴다
+ *   <li>확인 필요 판정: OCR이 판정했으면 그대로 따르고, 없으면 신뢰도 0.8 기준. OCR 경고는 그대로 옮긴다.</li>
+ *   <li>OCR이 검증을 하지 않은 결과(가짜 OCR 등)만: 합계 검증에 실패하면 관련 합계 필드를 NEEDS_REVIEW로 바꾸고 경고를 남긴다
  *       (OCR 명세: needs_review = 신뢰도 0.8 미만 "또는 검증 실패").</li>
  * </ol>
  *
@@ -63,12 +63,9 @@ public class PayslipAssembler {
                 warnings.add(new PayslipWarning(field.code(), "같은 항목이 두 번 인식되어 첫 번째 값만 사용했습니다."));
                 continue;
             }
-            PayslipField payslipField = PayslipField.fromOcr(key.get(), field.value(), clamp(field.confidence()), field.sourceLabel());
-            // OCR이 자체 검증에서 "확인 필요"라고 한 값은 신뢰도가 높아도 확인 필요로 둔다(값이 없으면 MISSING 유지).
-            if (field.needsReview()) {
-                payslipField.markNeedsReview();
-            }
-            fields.put(key.get(), payslipField);
+            // OCR이 확인 필요 여부를 판정했으면 그대로 따르고, 판정이 없으면(null) 신뢰도 0.8 기준으로 정한다.
+            fields.put(key.get(), PayslipField.fromOcr(key.get(), field.value(), clamp(field.confidence()),
+                    field.sourceLabel(), field.needsReview()));
         }
 
         // 3. 빠진 필드는 MISSING으로 채운다
@@ -76,10 +73,13 @@ public class PayslipAssembler {
             fields.computeIfAbsent(key, k -> PayslipField.fromOcr(k, null, null, null));
         }
 
-        // 4. 합계 검증
-        checkTotal(fields, Category.PAYMENT, PayslipFieldKey.PAYMENT_TOTAL, unmapped, warnings);
-        checkTotal(fields, Category.DEDUCTION, PayslipFieldKey.DEDUCTION_TOTAL, unmapped, warnings);
-        checkNetPay(fields, warnings);
+        // 4. 합계 검증. OCR이 이미 검증했으면(validated) 결과가 warnings로 들어와 있으므로 다시 하지 않는다.
+        //    두 번 하면 같은 문제가 서로 다른 문장으로 두 번 보이고, 판정 기준이 달라 결과가 엇갈릴 수도 있다.
+        if (!ocr.validated()) {
+            checkTotal(fields, Category.PAYMENT, PayslipFieldKey.PAYMENT_TOTAL, unmapped, warnings);
+            checkTotal(fields, Category.DEDUCTION, PayslipFieldKey.DEDUCTION_TOTAL, unmapped, warnings);
+            checkNetPay(fields, warnings);
+        }
 
         Payslip payslip = Payslip.create(user, payPeriod, ocr.companyName(), unmapped, warnings);
         fields.values().forEach(payslip::addField);

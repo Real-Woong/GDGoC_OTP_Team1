@@ -112,4 +112,55 @@ class PayslipAssemblerTest {
         assertThat(payslip.getWarnings())
                 .anySatisfy(w -> assertThat(w.reason()).isEqualTo("'소득세' 값을 확인해 주세요."));
     }
+
+    @Test
+    void OCR이_OK로_판정하면_신뢰도가_낮아도_OK() {
+        // OCR은 신뢰도 외에 요율·합계 검증까지 보고 판정한다. BE의 0.8 기준으로 뒤집지 않는다.
+        OcrResult ocr = new OcrResult("2026-03", null,
+                List.of(new OcrResult.Field("base_salary", 2_400_000, 0.7, "기본급", false)),
+                List.of(), List.of(), true);
+
+        Payslip payslip = assembler.assemble(user, "2026-03", ocr, List.of());
+
+        assertThat(statusOf(payslip, PayslipFieldKey.BASE_SALARY)).isEqualTo(FieldStatus.OK);
+    }
+
+    @Test
+    void OCR이_판정을_주지_않으면_신뢰도_기준() {
+        OcrResult ocr = new OcrResult("2026-03", null,
+                List.of(new OcrResult.Field("base_salary", 2_400_000, 0.7, "기본급")), List.of());
+
+        Payslip payslip = assembler.assemble(user, "2026-03", ocr, List.of());
+
+        assertThat(statusOf(payslip, PayslipFieldKey.BASE_SALARY)).isEqualTo(FieldStatus.NEEDS_REVIEW);
+    }
+
+    /** 합계가 맞지 않는 명세서: 지급 항목 합 1,000,000인데 지급 합계는 2,000,000. */
+    private List<OcrResult.Field> mismatchedTotals(Boolean ocrNeedsReview) {
+        return List.of(
+                new OcrResult.Field("base_salary", 1_000_000, 0.99, "기본급", ocrNeedsReview),
+                new OcrResult.Field("payment_total", 2_000_000, 0.99, "지급합계", ocrNeedsReview));
+    }
+
+    @Test
+    void OCR이_검증한_결과는_BE가_합계검증을_다시_하지_않는다() {
+        OcrResult ocr = new OcrResult("2026-03", null, mismatchedTotals(true), List.of(),
+                List.of(new OcrResult.Warning("payment_total", "지급 항목의 합이 지급합계와 달라요.")), true);
+
+        Payslip payslip = assembler.assemble(user, "2026-03", ocr, List.of());
+
+        // OCR 경고 1개만 있고, BE의 "항목을 더한 값과 지급액 합계가 맞지 않습니다."는 추가되지 않는다
+        assertThat(payslip.getWarnings()).extracting(w -> w.reason())
+                .containsExactly("지급 항목의 합이 지급합계와 달라요.");
+    }
+
+    @Test
+    void OCR이_검증하지_않은_결과는_BE가_합계를_검증한다() {
+        OcrResult ocr = new OcrResult("2026-03", null, mismatchedTotals(null), List.of());
+
+        Payslip payslip = assembler.assemble(user, "2026-03", ocr, List.of());
+
+        assertThat(statusOf(payslip, PayslipFieldKey.PAYMENT_TOTAL)).isEqualTo(FieldStatus.NEEDS_REVIEW);
+        assertThat(payslip.getWarnings()).extracting(w -> w.field()).contains("payment_total");
+    }
 }

@@ -93,6 +93,8 @@ class HttpOcrClientTest {
         assertThat(result.unmappedItems()).containsExactly(new OcrResult.Unmapped("직책수당", 100000));
         // pass는 버리고 warning만 남긴다
         assertThat(result.warnings()).containsExactly(new OcrResult.Warning("income_tax", "'소득세' 값을 확인해 주세요."));
+        // validation이 있으므로 BE는 합계 검증을 다시 하지 않는다
+        assertThat(result.validated()).isTrue();
         server.verify();
     }
 
