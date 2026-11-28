@@ -79,6 +79,21 @@ curl -X POST localhost:8080/api/payslips/1/check -H 'X-User-Subject: chulsoo'
 
 에러는 모두 `{ "code", "message", "fieldErrors", "timestamp" }` 형식이다. 프론트는 `code`로 분기한다.
 
+업로드(`POST /api/payslips`) 실패 코드와 화면 처리:
+
+| code | HTTP | FE 처리 |
+|---|---|---|
+| `TERMS_NOT_AGREED` | 403 | 약관 동의 화면 |
+| `INVALID_FILE` | 400 | 다른 파일 선택 (형식·용량·3페이지 초과·깨짐, `message`에 구체적 이유) |
+| `PAY_PERIOD_REQUIRED` | 400 | 귀속월 입력 후 같은 파일로 재업로드 |
+| `PDF_PASSWORD_REQUIRED` / `PDF_PASSWORD_INVALID` | 428 | 비밀번호 입력 후 같은 파일 + `pdfPassword`로 재업로드 |
+| `NOT_A_PAYSLIP` | 422 | 다른 파일 또는 직접 입력 |
+| `LOW_QUALITY_IMAGE` | 422 | 다시 촬영 또는 직접 입력 |
+| `OCR_FAILED` | 422 | 재시도 또는 직접 입력 |
+| `OCR_UNAVAILABLE` | 503 | 잠시 후 재시도 또는 직접 입력 (OCR 서버 꺼짐·30초 초과) |
+
+직접 입력은 `POST /api/payslips/manual`로 빈 명세서를 만든 뒤, 확인 화면에서 `PATCH /fields`로 채운다.
+
 ## 환경변수
 
 | 이름 | 기본값 | 용도 |

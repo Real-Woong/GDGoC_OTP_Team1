@@ -153,11 +153,10 @@ public class HttpOcrClient implements OcrClient {
         String message = (body == null || body.error() == null) ? null : body.error().message();
         log.warn("OCR 실패 request_id={} status={} code={}", requestId, status.value(), code);
 
+        // 코드는 항상 넘겨서(업로드 서비스가 에러 종류를 나누는 데 씀), 문장은 사용자에게 보여도 되는 경우만 넘긴다.
         String devMessage = "OCR 서버 %d %s".formatted(status.value(), code);
-        if (code != null && USER_FACING_STATUSES.contains(status.value())) {
-            return new OcrException(devMessage, code, message);
-        }
-        return new OcrException(devMessage);
+        String userMessage = USER_FACING_STATUSES.contains(status.value()) ? message : null;
+        return new OcrException(devMessage, code, userMessage);
     }
 
     /** OCR 서버 형식 → BE 내부 형식(OcrResult). */

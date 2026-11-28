@@ -148,7 +148,10 @@ class HttpOcrClientTest {
 
         // 서버 설정 문제라 사용자에게 "인증 실패"를 보여 주면 혼란스럽다 → 일반 문구로 처리되도록 null
         assertThatThrownBy(() -> client.extract(pdf(null, null)))
-                .isInstanceOfSatisfying(OcrException.class, e -> assertThat(e.getUserMessage()).isNull());
+                .isInstanceOfSatisfying(OcrException.class, e -> {
+                    assertThat(e.getCode()).isEqualTo("UNAUTHORIZED"); // 코드는 넘겨서 BE가 OCR_UNAVAILABLE로 분류
+                    assertThat(e.getUserMessage()).isNull();
+                });
     }
 
     @Test

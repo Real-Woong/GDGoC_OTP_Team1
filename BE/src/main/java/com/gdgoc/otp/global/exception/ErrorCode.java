@@ -32,7 +32,13 @@ public enum ErrorCode {
     PAYSLIP_NOT_CONFIRMED(HttpStatus.BAD_REQUEST, "확인하지 않은 항목이 있어 점검할 수 없습니다."),
     INVALID_FILE(HttpStatus.BAD_REQUEST, "PNG, JPG, PDF 파일만 올릴 수 있습니다."),
     PAY_PERIOD_REQUIRED(HttpStatus.BAD_REQUEST, "귀속월을 읽지 못했습니다. 귀속월(YYYY-MM)을 입력해 주세요."),
-    OCR_FAILED(HttpStatus.UNPROCESSABLE_CONTENT, "명세서를 읽지 못했습니다. 더 선명한 이미지로 다시 올려 주세요."),
+    // ── OCR 실패: FE가 code로 다음 행동을 고른다. 모든 경우에 "직접 입력"(POST /api/payslips/manual)으로 넘어갈 수 있다.
+    // 파일 자체 문제(형식, 용량, 3페이지 초과, 깨짐)는 위의 INVALID_FILE로 응답한다(→ 다른 파일 선택).
+    NOT_A_PAYSLIP(HttpStatus.UNPROCESSABLE_CONTENT, "급여명세서로 보이지 않습니다. 다른 파일을 올리거나 직접 입력해 주세요."),
+    LOW_QUALITY_IMAGE(HttpStatus.UNPROCESSABLE_CONTENT, "글자를 읽기 어려운 이미지입니다. 더 선명하게 다시 찍거나 직접 입력해 주세요."),
+    OCR_FAILED(HttpStatus.UNPROCESSABLE_CONTENT, "명세서를 읽지 못했습니다. 다시 시도하거나 직접 입력해 주세요."),
+    // 503: 사용자 잘못이 아니라 OCR 서버가 응답하지 않거나(꺼짐, 30초 초과) 설정 문제(API 키)일 때. 잠시 후 재시도.
+    OCR_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "지금은 명세서를 읽을 수 없습니다. 잠시 후 다시 시도하거나 직접 입력해 주세요."),
     // 428 Precondition Required: "이 요청을 처리하려면 먼저 필요한 것(비밀번호)이 있다"는 뜻. OCR 서버와 같은 상태 코드다.
     // FE는 code로 구분해 비밀번호 입력창을 띄우고, 같은 파일과 pdfPassword를 함께 다시 보낸다.
     PDF_PASSWORD_REQUIRED(HttpStatus.PRECONDITION_REQUIRED, "비밀번호가 걸린 PDF입니다. 비밀번호를 입력해 주세요."),

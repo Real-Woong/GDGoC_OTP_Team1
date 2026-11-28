@@ -9,6 +9,8 @@ import com.gdgoc.otp.user.domain.User;
 import com.gdgoc.otp.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockMultipartFile;
@@ -49,14 +51,14 @@ class PayslipUploadOcrFailureTest extends ApiTestSupport {
     }
 
     @Test
-    void OCR이_실패하면_422와_일반_문구() throws Exception {
+    void OCR_서버가_응답하지_않으면_503과_일반_문구() throws Exception {
         given(ocrClient.extract(any())).willThrow(new OcrException("timeout after 30s"));
 
         mockMvc.perform(multipart("/api/payslips").file(png()).header("X-User-Subject", "agreed"))
-                .andExpect(status().isUnprocessableContent())
-                .andExpect(jsonPath("$.code").value("OCR_FAILED"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("OCR_UNAVAILABLE"))
                 // 내부 원인(timeout)은 응답에 나가지 않는다
-                .andExpect(jsonPath("$.message").value("명세서를 읽지 못했습니다. 더 선명한 이미지로 다시 올려 주세요."));
+                .andExpect(jsonPath("$.message").value("지금은 명세서를 읽을 수 없습니다. 잠시 후 다시 시도하거나 직접 입력해 주세요."));
     }
 
     @Test
@@ -96,14 +98,35 @@ class PayslipUploadOcrFailureTest extends ApiTestSupport {
     }
 
     @Test
-    void OCR서버가_사용자용_문장을_주면_그_문장을_보여준다() throws Exception {
+    void 파일_문제는_INVALID_FILE과_OCR서버_문장() throws Exception {
         given(ocrClient.extract(any())).willThrow(
                 new OcrException("OCR 서버 413", "TOO_MANY_PAGES", "PDF는 3페이지까지 올릴 수 있어요."));
 
         mockMvc.perform(multipart("/api/payslips").file(png()).header("X-User-Subject", "agreed"))
-                .andExpect(status().isUnprocessableContent())
-                .andExpect(jsonPath("$.code").value("OCR_FAILED"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_FILE"))
                 .andExpect(jsonPath("$.message").value("PDF는 3페이지까지 올릴 수 있어요."));
+    }
+
+    /**
+     * OCR 서버 코드 → BE 응답 코드·HTTP 상태 매핑 표(PayslipUploadService.toBusinessException)를 한 번에 확인한다.
+     * {@code @ParameterizedTest + @CsvSource}: 같은 테스트를 표의 각 줄 값으로 여러 번 돌린다.
+     */
+    @ParameterizedTest(name = "{0} → {1} ({2})")
+    @CsvSource({
+            "NOT_A_PAYSLIP,     NOT_A_PAYSLIP,     422",
+            "LOW_QUALITY_IMAGE, LOW_QUALITY_IMAGE, 422",
+            "EXTRACTION_FAILED, OCR_FAILED,        422",
+            "CORRUPTED_FILE,    INVALID_FILE,      400",
+            "UNAUTHORIZED,      OCR_UNAVAILABLE,   503",
+            "SOMETHING_NEW,     OCR_UNAVAILABLE,   503",
+    })
+    void OCR_에러코드_매핑(String ocrCode, String expectedCode, int expectedStatus) throws Exception {
+        given(ocrClient.extract(any())).willThrow(new OcrException("OCR 서버 오류", ocrCode, null));
+
+        mockMvc.perform(multipart("/api/payslips").file(png()).header("X-User-Subject", "agreed"))
+                .andExpect(status().is(expectedStatus))
+                .andExpect(jsonPath("$.code").value(expectedCode));
     }
 
     @Test

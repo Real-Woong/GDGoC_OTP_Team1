@@ -102,24 +102,38 @@ public class PayslipUploadService {
     }
 
     /**
-     * OCR 실패를 사용자용 에러로 바꾼다.
-     * <ul>
-     *   <li>비밀번호 관련: FE가 비밀번호 입력창을 띄울 수 있도록 전용 코드(428)</li>
-     *   <li>OCR 서버가 사용자용 문장을 준 경우(예: "PDF는 3페이지까지"): OCR_FAILED + 그 문장</li>
-     *   <li>그 외(타임아웃, 서버 장애): OCR_FAILED + 일반 문구. 내부 원인은 응답에 넣지 않는다</li>
-     * </ul>
+     * OCR 실패를 사용자용 에러로 바꾼다. FE는 응답 code로 다음 화면을 고른다.
+     *
+     * <pre>
+     * OCR 서버 code                          → BE code (HTTP)              FE 처리
+     * PDF_PASSWORD_REQUIRED                  → PDF_PASSWORD_REQUIRED (428) 비밀번호 입력
+     * PDF_PASSWORD_INVALID                   → PDF_PASSWORD_INVALID (428)  비밀번호 다시 입력
+     * FILE_TOO_LARGE, TOO_MANY_PAGES,
+     * UNSUPPORTED_FORMAT, CORRUPTED_FILE     → INVALID_FILE (400)          다른 파일 선택 (OCR 서버 문장 표시)
+     * NOT_A_PAYSLIP                          → NOT_A_PAYSLIP (422)         다른 파일 또는 직접 입력
+     * LOW_QUALITY_IMAGE                      → LOW_QUALITY_IMAGE (422)     다시 촬영 또는 직접 입력
+     * EXTRACTION_FAILED                      → OCR_FAILED (422)            재시도 또는 직접 입력
+     * 응답 없음(타임아웃·꺼짐), UNAUTHORIZED,
+     * 그 밖의 알 수 없는 코드                 → OCR_UNAVAILABLE (503)       잠시 후 재시도 또는 직접 입력
+     * </pre>
+     *
+     * <p>OCR 서버 문장은 파일 문제일 때만 쓴다("PDF는 3페이지까지"처럼 구체적이라 도움이 된다).
+     * 나머지는 BE 기본 문구를 써서 "직접 입력" 안내를 일관되게 넣는다. 내부 원인은 응답에 넣지 않는다.</p>
      */
     private BusinessException toBusinessException(OcrException e) {
-        if ("PDF_PASSWORD_REQUIRED".equals(e.getCode())) {
-            return new BusinessException(ErrorCode.PDF_PASSWORD_REQUIRED);
-        }
-        if ("PDF_PASSWORD_INVALID".equals(e.getCode())) {
-            return new BusinessException(ErrorCode.PDF_PASSWORD_INVALID);
-        }
-        if (hasText(e.getUserMessage())) {
-            return new BusinessException(ErrorCode.OCR_FAILED, e.getUserMessage());
-        }
-        return new BusinessException(ErrorCode.OCR_FAILED);
+        String code = e.getCode() == null ? "" : e.getCode();
+        return switch (code) {
+            case "PDF_PASSWORD_REQUIRED" -> new BusinessException(ErrorCode.PDF_PASSWORD_REQUIRED);
+            case "PDF_PASSWORD_INVALID" -> new BusinessException(ErrorCode.PDF_PASSWORD_INVALID);
+            case "FILE_TOO_LARGE", "TOO_MANY_PAGES", "UNSUPPORTED_FORMAT", "CORRUPTED_FILE" ->
+                    hasText(e.getUserMessage())
+                            ? new BusinessException(ErrorCode.INVALID_FILE, e.getUserMessage())
+                            : new BusinessException(ErrorCode.INVALID_FILE);
+            case "NOT_A_PAYSLIP" -> new BusinessException(ErrorCode.NOT_A_PAYSLIP);
+            case "LOW_QUALITY_IMAGE" -> new BusinessException(ErrorCode.LOW_QUALITY_IMAGE);
+            case "EXTRACTION_FAILED" -> new BusinessException(ErrorCode.OCR_FAILED);
+            default -> new BusinessException(ErrorCode.OCR_UNAVAILABLE);
+        };
     }
 
     private static boolean hasText(String value) {
