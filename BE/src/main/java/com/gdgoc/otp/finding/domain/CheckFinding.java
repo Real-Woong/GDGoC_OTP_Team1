@@ -2,7 +2,9 @@ package com.gdgoc.otp.finding.domain;
 
 import com.gdgoc.otp.payslip.domain.Payslip;
 import com.gdgoc.otp.taxrule.domain.TaxRuleVersion;
+import com.gdgoc.otp.global.crypto.EncryptedStringConverter;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -73,7 +75,8 @@ public class CheckFinding {
     @Column(name = "severity", nullable = false, length = 20)
     private Severity severity;
 
-    /** 사용자에게 보여줄 안내 문구. */
+    /** 사용자에게 보여줄 안내 문구. 🔒 "식대 200,000원 중 …"처럼 금액이 들어가므로 암호화 저장. */
+    @Convert(converter = EncryptedStringConverter.class)
     @Column(name = "message", nullable = false, columnDefinition = "text")
     private String message;
 

@@ -3,7 +3,9 @@ package com.gdgoc.otp.payslip.domain;
 import com.gdgoc.otp.global.common.BaseTimeEntity;
 import com.gdgoc.otp.user.domain.User;
 import jakarta.persistence.CascadeType;
+import com.gdgoc.otp.global.crypto.EncryptedStringConverter;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -17,8 +19,6 @@ import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -69,24 +69,24 @@ public class Payslip extends BaseTimeEntity {
     @Column(name = "pay_period", nullable = false, length = 7)
     private String payPeriod;
 
-    /** 명세서에 적힌 회사명. 못 읽었으면 null. */
-    @Column(name = "company_name")
+    /** 명세서에 적힌 회사명. 못 읽었으면 null. 🔒 암호화 저장. */
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(name = "company_name", columnDefinition = "text")
     private String companyName;
 
     /**
-     * 표준 필드 14개에 맞추지 못한 원문 항목들. DB에는 JSON 배열로 저장된다.
+     * 표준 필드 14개에 맞추지 못한 원문 항목들. 예: [{"label":"직책수당","amount":100000}]
      *
-     * <p>{@code @JdbcTypeCode(SqlTypes.JSON)}: Hibernate가 List를 JSON 문자열로 바꿔
-     * PostgreSQL jsonb 컬럼에 넣고, 읽을 때 다시 List로 바꿔준다.
-     * 별도 테이블을 만들 만큼 자주 검색하는 값이 아니라서 JSON으로 묶었다.</p>
+     * <p>🔒 List → JSON 문자열 → 암호화해서 TEXT 컬럼에 저장한다(EncryptedUnmappedItemsConverter).
+     * 별도 테이블을 만들 만큼 자주 검색하는 값이 아니라서 JSON 하나로 묶었다.</p>
      */
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "unmapped_items", nullable = false, columnDefinition = "jsonb")
+    @Convert(converter = EncryptedUnmappedItemsConverter.class)
+    @Column(name = "unmapped_items", nullable = false, columnDefinition = "text")
     private List<UnmappedItem> unmappedItems = new ArrayList<>();
 
-    /** OCR 직후 검증에서 나온 경고들(합계 불일치 등). JSON 배열. */
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "warnings", nullable = false, columnDefinition = "jsonb")
+    /** OCR 직후 검증에서 나온 경고들(합계 불일치 등). 🔒 JSON 배열을 암호화해 저장. */
+    @Convert(converter = EncryptedWarningsConverter.class)
+    @Column(name = "warnings", nullable = false, columnDefinition = "text")
     private List<PayslipWarning> warnings = new ArrayList<>();
 
     /**

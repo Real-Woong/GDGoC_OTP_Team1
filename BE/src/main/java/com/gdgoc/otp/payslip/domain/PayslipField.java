@@ -1,6 +1,9 @@
 package com.gdgoc.otp.payslip.domain;
 
+import com.gdgoc.otp.global.crypto.EncryptedIntegerConverter;
+import com.gdgoc.otp.global.crypto.EncryptedStringConverter;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -59,16 +62,24 @@ public class PayslipField {
     /**
      * 금액. 월 기준, 원 단위 정수.
      * 읽지 못했으면 0이 아니라 null이다. 0원(실제로 없는 수당)과 "모름"을 구분해야 하기 때문이다.
+     *
+     * <p>🔒 DB에는 암호화해서 저장한다(EncryptedIntegerConverter). 그래서 DB 컬럼은 TEXT다.
+     * Java에서는 평범한 Integer로 읽고 쓴다.</p>
      */
-    @Column(name = "value")
+    @Convert(converter = EncryptedIntegerConverter.class)
+    @Column(name = "value", columnDefinition = "text")
     private Integer value;
 
     /** OCR이 준 신뢰도(0.0~1.0). 사용자가 직접 입력·수정한 값이면 null. */
     @Column(name = "confidence")
     private Double confidence;
 
-    /** 명세서에 실제로 적혀 있던 항목명. 예: key는 MEAL_ALLOWANCE인데 원문은 "중식대". 화면에서 근거로 보여준다. */
-    @Column(name = "source_label")
+    /**
+     * 명세서에 실제로 적혀 있던 항목명. 예: key는 MEAL_ALLOWANCE인데 원문은 "중식대". 화면에서 근거로 보여준다.
+     * 🔒 회사 고유의 수당명이 들어갈 수 있어 암호화한다.
+     */
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(name = "source_label", columnDefinition = "text")
     private String sourceLabel;
 
     @Enumerated(EnumType.STRING)

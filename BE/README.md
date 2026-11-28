@@ -85,6 +85,7 @@ curl -X POST localhost:8080/api/payslips/1/check -H 'X-User-Subject: chulsoo'
 | `DB_URL` | `jdbc:postgresql://localhost:5432/otp` | DB 주소 |
 | `DB_USERNAME` / `DB_PASSWORD` | `postgres` / `postgres` | DB 계정 |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:5173` | 브라우저 호출을 허용할 프론트 주소 |
+| `OTP_ENCRYPTION_KEY` | (비어 있음 → 개발용 공개 키) | 명세서 데이터 암호화 키. `openssl rand -base64 32`로 생성. **배포 시 필수**, 잃어버리면 기존 데이터 복구 불가 |
 | `OCR_PROVIDER` | `fake` | `fake`(고정 샘플) 또는 `http`(팀 OCR 서버) |
 | `OCR_BASE_URL` | `http://localhost:8000` | OCR 서버 주소 |
 | `OCR_API_KEY` | (비어 있음) | OCR 서버의 `OCR_API_KEY`와 같은 값. 비우면 키 없이 호출 |
@@ -93,5 +94,6 @@ curl -X POST localhost:8080/api/payslips/1/check -H 'X-User-Subject: chulsoo'
 
 - 인증: 임시 헤더. 누구나 남의 이름을 댈 수 있다.
 - OCR: 기본은 가짜(`fake`). `http` 모드는 팀 OCR 서버를 동기 호출한다(1장 약 9초, 타임아웃 30초). OCR 서버가 주는 입사일 후보(`join_date`)와 안내(`hints`)는 아직 쓰지 않는다.
+- 암호화: 명세서 금액·원문 항목명·회사명·표준 외 항목·경고·점검 메시지는 DB에 AES-256-GCM 암호문(`v1:...`)으로 저장된다(`global/crypto`). 이 컬럼들은 DB에서 값으로 검색·합계를 낼 수 없다. 키 없이 실행하면 개발용 공개 키를 쓰므로 실제 데이터 보호가 안 된다.
 - 세법 수치·할 일 기한: 전부 미검증 더미(DRAFT). 실제 안내에 쓰면 안 된다.
 - DB 스키마 변경은 `src/main/resources/db/migration`에 **새 버전 파일**(V3__...)로 추가한다. 이미 공유된 V1, V2는 고치지 않는다.
